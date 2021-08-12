@@ -1,0 +1,5 @@
+# Lilith Lisp
+
+A Lisp interpreter.
+Eventually...
+
