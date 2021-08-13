@@ -1,8 +1,8 @@
-SRCS = prompt.c
+SRCS = prompt.c mpc.c
 
 BIN1 = lilith
 BIN1_SRCS = $(SRCS)
-LIBS = -ledit
+LIBS = -ledit -lm
 
 include ../lib/simplified-make/simplified.mk
 
