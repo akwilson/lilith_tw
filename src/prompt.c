@@ -6,69 +6,149 @@
 #include "mpc.h"
 
 /**
+ * LVal types
+ */
+enum { LVAL_NUM, LVAL_ERROR };
+
+/**
+ * Error codes
+ */
+enum { LERR_DIV_ZERO, LERR_BAD_NUM, LERR_BAD_OP };
+
+/**
+ * Lisp value
+ */
+typedef struct lval
+{
+    int type;
+    long num;
+    int error;
+} lval;
+
+static lval lval_num(long num)
+{
+    lval rv;
+    rv.type = LVAL_NUM;
+    rv.num = num;
+    return rv;
+}
+
+static lval lval_error(int error)
+{
+    lval rv;
+    rv.type = LVAL_ERROR;
+    rv.error = error;
+    return rv;
+}
+
+static void lval_print(lval v)
+{
+    switch (v.type)
+    {
+    case LVAL_NUM:
+        printf("%li", v.num);
+        break;
+    case LVAL_ERROR:
+        if (v.error == LERR_DIV_ZERO) {
+            printf("Error: Division By Zero");
+        }
+        else if (v.error == LERR_BAD_OP)   {
+            printf("Error: Invalid Operator");
+        }
+        else if (v.error == LERR_BAD_NUM)  {
+            printf("Error: Invalid Number");
+        }
+        break;
+    }
+}
+
+static void lval_println(lval v)
+{
+    lval_print(v);
+    putchar('\n');
+}
+
+/**
  * Evaluates a single expression
  */
-static long eval_op(char *operator, long x, long y)
+static lval eval_op(char *operator, lval x, lval y)
 {
+    if (x.type == LVAL_ERROR)
+    {
+        return x;
+    }
+
+    if (y.type == LVAL_ERROR)
+    {
+        return y;
+    }
+
     if (strcmp(operator, "+") == 0)
     {
-        return x + y;
+        return lval_num(x.num + y.num);
     }
 
     if (strcmp(operator, "-") == 0)
     {
-        return x - y;
+        return lval_num(x.num - y.num);
     }
 
     if (strcmp(operator, "*") == 0)
     {
-        return x * y;
+        return lval_num(x.num * y.num);
     }
 
     if (strcmp(operator, "/") == 0)
     {
-        return x / y;
+        if (y.num == 0)
+        {
+            return lval_error(LERR_DIV_ZERO);
+        }
+
+        return lval_num(x.num / y.num);
     }
 
     if (strcmp(operator, "%") == 0)
     {
-        return x % y;
+        return lval_num(x.num % y.num);
     }
 
     if (strcmp(operator, "^") == 0)
     {
-        return pow(x, y);
+        return lval_num(pow(x.num, y.num));
     }
 
     if (strcmp(operator, "max") == 0)
     {
-        return x > y ? x : y;
+        return lval_num(x.num > y.num ? x.num : y.num);
     }
 
     if (strcmp(operator, "min") == 0)
     {
-        return x < y ? x : y;
+        return lval_num(x.num < y.num ? x.num : y.num);
     }
 
-    return 0;
+    return lval_error(LERR_BAD_OP);
 }
 
 /**
  * Evaluates the parsed abstract syntax tree.
  */
-static long eval(mpc_ast_t *tree)
+static lval eval(mpc_ast_t *tree)
 {
     // If it's a number it's a leaf node and can just be returned
     if (strstr(tree->tag, "number"))
     {
-        return atoi(tree->contents);
+        errno = 0;
+        long num = strtol(tree->contents, NULL, 10);
+        return errno != ERANGE ? lval_num(num) : lval_error(LERR_BAD_NUM);
     }
 
     // The second child of the expression must be the operator
     char *operator = tree->children[1]->contents;
 
     // The first number of the expression
-    long x = eval(tree->children[2]);
+    lval x = eval(tree->children[2]);
 
     // Read the rest of the expression
     for (int i = 3; strstr(tree->children[i]->tag, "expression"); i++)
@@ -142,8 +222,8 @@ int main(int argc, char *argv[])
                 printf("Leaf count: %d\n", leaf_count(parse_result.output, 0));
             }
 
-            long result = eval(parse_result.output);
-            printf("%li\n", result);
+            lval result = eval(parse_result.output);
+            lval_println(result);
             mpc_ast_delete(parse_result.output);
         }
         else
