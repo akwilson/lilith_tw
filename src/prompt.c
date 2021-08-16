@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include <editline/readline.h>
 #include "mpc.h"
 
@@ -27,6 +28,26 @@ static long eval_op(char *operator, long x, long y)
     if (strcmp(operator, "/") == 0)
     {
         return x / y;
+    }
+
+    if (strcmp(operator, "%") == 0)
+    {
+        return x % y;
+    }
+
+    if (strcmp(operator, "^") == 0)
+    {
+        return pow(x, y);
+    }
+
+    if (strcmp(operator, "max") == 0)
+    {
+        return x > y ? x : y;
+    }
+
+    if (strcmp(operator, "min") == 0)
+    {
+        return x < y ? x : y;
     }
 
     return 0;
@@ -58,6 +79,25 @@ static long eval(mpc_ast_t *tree)
     return x;
 }
 
+/**
+ * Counts the number of leaves on an AST.
+ */
+static int leaf_count(mpc_ast_t *tree, int sofar)
+{
+    if (strstr(tree->tag, "number") || strstr(tree->tag, "operator"))
+    {
+        return sofar + 1;
+    }
+
+    int x = 0;
+    for (int i = 0; i < tree->children_num; i++)
+    {
+        x += leaf_count(tree->children[i], sofar);
+    }
+
+    return x;
+}
+
 int main(int argc, char *argv[])
 {
     bool ast_print = false;
@@ -79,7 +119,7 @@ int main(int argc, char *argv[])
             "                                                                          \
                 number     : /-?[0-9]+/ ;                                              \
                 decimal    : /-?[0-9]+\\.[0-9]+/ ;                                     \
-                operator   : '+' | '-' | '*' | '/' ;                                   \
+                operator   : '+' | '-' | '*' | '/' | '%' | '^' | \"max\" | \"min\" ;   \
                 expression : <decimal> | <number> | '(' <operator> <expression>+ ')' ; \
                 lilith     : /^/ <operator> <expression>+ /$/ ;                        \
             ",
@@ -99,6 +139,7 @@ int main(int argc, char *argv[])
             if (ast_print)
             {
                 mpc_ast_print(parse_result.output);
+                printf("Leaf count: %d\n", leaf_count(parse_result.output, 0));
             }
 
             long result = eval(parse_result.output);
