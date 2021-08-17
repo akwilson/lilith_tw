@@ -1,4 +1,4 @@
-SRCS = prompt.c mpc.c
+SRCS = lval.c eval.c prompt.c mpc.c
 
 BIN1 = lilith
 BIN1_SRCS = $(SRCS)
