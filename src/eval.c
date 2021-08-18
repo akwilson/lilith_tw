@@ -22,50 +22,25 @@ static lval do_calc(enum iops_enum iop, lval xval, lval yval)
 #undef $
     };
 
-    static void *ld_jump_table[] = {
-#define $(x,op)   &&LD_##x,
-        IOPS
-#undef $
-    };
+    goto *(ll_jump_table[iop]);
 
-    static void *dl_jump_table[] = {
-#define $(x,op)   &&DL_##x,
-        IOPS
-#undef $
-    };
-
-    static void *dd_jump_table[] = {
-#define $(x,op)   &&DD_##x,
-        IOPS
-#undef $
-    };
-
-    if (xval.type == LVAL_LONG && yval.type == LVAL_LONG)
-    {
-        goto *(ll_jump_table[iop]);
-#define $(x, op) LL_##x: return lval_long(xval.value.num_l op yval.value.num_l);
-        IOPS
-#undef $
-    }
-
-    if (xval.type == LVAL_LONG)
-    {
-        goto *(ld_jump_table[iop]);
-#define $(x, op) LD_##x: return lval_double(xval.value.num_l op yval.value.num_d);
-        IOPS
-#undef $
-    }
-
-    if (yval.type == LVAL_LONG)
-    {
-        goto *(dl_jump_table[iop]);
-#define $(x, op) DL_##x: return lval_double(xval.value.num_d op yval.value.num_l);
-        IOPS
-#undef $
-    }
-
-    goto *(dd_jump_table[iop]);
-#define $(x, op) DD_##x: return lval_double(xval.value.num_d op yval.value.num_d);
+#define $(x, op) LL_##x:                                          \
+    if (xval.type == LVAL_LONG && yval.type == LVAL_LONG)         \
+    {                                                             \
+        return lval_long(xval.value.num_l op yval.value.num_l);   \
+    }                                                             \
+                                                                  \
+    if (xval.type == LVAL_LONG)                                   \
+    {                                                             \
+        return lval_double(xval.value.num_l op yval.value.num_d); \
+    }                                                             \
+                                                                  \
+    if (yval.type == LVAL_LONG)                                   \
+    {                                                             \
+        return lval_double(xval.value.num_d op yval.value.num_l); \
+    }                                                             \
+                                                                  \
+    return lval_double(xval.value.num_d op yval.value.num_d);
     IOPS
 #undef $
 }
