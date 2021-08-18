@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <lilith_int.h>
 
-lval lval_num(long num)
+lval lval_long(long num)
 {
     lval rv;
-    rv.type = LVAL_NUM;
-    rv.value.num = num;
+    rv.type = LVAL_LONG;
+    rv.value.num_l = num;
+    return rv;
+}
+
+lval lval_double(double num)
+{
+    lval rv;
+    rv.type = LVAL_DOUBLE;
+    rv.value.num_d = num;
     return rv;
 }
 
@@ -21,8 +29,11 @@ void lval_print(lval v)
 {
     switch (v.type)
     {
-    case LVAL_NUM:
-        printf("%li", v.value.num);
+    case LVAL_LONG:
+        printf("%li", v.value.num_l);
+        break;
+    case LVAL_DOUBLE:
+        printf("%f", v.value.num_d);
         break;
     case LVAL_ERROR:
         if (v.value.error == LERR_DIV_ZERO)

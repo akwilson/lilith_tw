@@ -6,7 +6,7 @@
 /**
  * LVal types
  */
-enum { LVAL_NUM, LVAL_ERROR };
+enum { LVAL_LONG, LVAL_DOUBLE, LVAL_ERROR };
 
 /**
  * Error codes
@@ -20,12 +20,14 @@ typedef struct lval
 {
     int type;
     union {
-        long num;
+        long num_l;
+        double num_d;
         int error;
     } value;
 } lval;
 
-lval lval_num(long num);
+lval lval_long(long num);
+lval lval_double(double num);
 lval lval_error(int error);
 void lval_print(lval v);
 void lval_println(lval v);
