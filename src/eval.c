@@ -52,6 +52,58 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
 #undef $
 }
 
+static lval *max(lval *xval, lval *yval)
+{
+    lval *rv;
+
+    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)
+    {
+        rv = lval_long(xval->value.num_l > yval->value.num_l ? xval->value.num_l : yval->value.num_l);
+    }
+    else if (xval->type == LVAL_LONG)
+    {
+        rv = lval_double(xval->value.num_l > yval->value.num_d ? xval->value.num_l : yval->value.num_d);
+    }
+    else if (yval->type == LVAL_LONG)
+    {
+        rv = lval_double(xval->value.num_d > yval->value.num_l ? xval->value.num_d : yval->value.num_l);
+    }
+    else
+    {
+        rv = lval_double(xval->value.num_d > yval->value.num_d ? xval->value.num_d : yval->value.num_d);
+    }
+
+    lval_del(xval);
+    lval_del(yval);
+    return rv;
+}
+
+static lval *min(lval *xval, lval *yval)
+{
+    lval *rv;
+
+    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)
+    {
+        rv = lval_long(xval->value.num_l < yval->value.num_l ? xval->value.num_l : yval->value.num_l);
+    }
+    else if (xval->type == LVAL_LONG)
+    {
+        rv = lval_double(xval->value.num_l < yval->value.num_d ? xval->value.num_l : yval->value.num_d);
+    }
+    else if (yval->type == LVAL_LONG)
+    {
+        rv = lval_double(xval->value.num_d < yval->value.num_l ? xval->value.num_d : yval->value.num_l);
+    }
+    else
+    {
+        rv = lval_double(xval->value.num_d < yval->value.num_d ? xval->value.num_d : yval->value.num_d);
+    }
+
+    lval_del(xval);
+    lval_del(yval);
+    return rv;
+}
+
 static lval *lval_pop(lval *val, int i)
 {
     lval *x = val->value.list.cell[i];
@@ -131,6 +183,14 @@ static lval *builtin_op(lval *a, const char *op)
             }
 
             x = do_calc(IOPSENUM_DIV, x, y);
+        }
+        else if (strcmp(op, "max") == 0)
+        {
+            x = max(x, y);
+        }
+        else if (strcmp(op, "min") == 0)
+        {
+            x = min(x, y);
         }
     }
 

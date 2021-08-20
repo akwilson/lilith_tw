@@ -41,17 +41,6 @@ lval *lval_double(double num);
 lval *lval_error(const char *error);
 
 /**
- * Genereates a new lval for a symbol.
- */
-lval *lval_symbol(char *symbol);
-
-/**
- * Generates a new lval for an s-expression. The returned value
- * contains no data and represents the start of an lval hierarchy.
- */
-lval *lval_sexpression(void);
-
-/**
  * Converts an AST in to a hierarchy of lval nodes.
  */
 lval *lval_read(const mpc_ast_t *tree);

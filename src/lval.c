@@ -18,6 +18,54 @@ static void lval_expr_print(const lval *v, char open, char close)
     putchar(close);
 }
 
+
+/**
+ * Genereates a new lval for a symbol.
+ */
+static lval *lval_symbol(char *symbol)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SYMBOL;
+    rv->value.symbol = malloc(strlen(symbol) + 1);
+    strcpy(rv->value.symbol, symbol);
+    return rv;
+}
+
+/**
+ * Generates a new lval for an s-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
+ */
+static lval *lval_sexpression()
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SEXPRESSION;
+    rv->value.list.count = 0;
+    rv->value.list.cell = 0;
+    return rv;
+}
+
+static lval *lval_add(lval *v, lval *x)
+{
+    v->value.list.count++;
+    v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
+    v->value.list.cell[v->value.list.count - 1] = x;
+    return v;
+}
+
+static lval *lval_read_long(const mpc_ast_t *tree)
+{
+    errno = 0;
+    long num = strtol(tree->contents, NULL, 10);
+    return errno != ERANGE ? lval_long(num) : lval_error("invalid number");
+}
+
+static lval *lval_read_double(const mpc_ast_t *tree)
+{
+    errno = 0;
+    double num = strtod(tree->contents, NULL);
+    return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal");
+}
+
 lval *lval_long(long num)
 {
     lval *rv = malloc(sizeof(lval));
@@ -40,46 +88,6 @@ lval *lval_error(const char *error)
     rv->type = LVAL_ERROR;
     rv->value.error = error;
     return rv;
-}
-
-lval *lval_symbol(char *symbol)
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SYMBOL;
-    rv->value.symbol = malloc(strlen(symbol) + 1);
-    strcpy(rv->value.symbol, symbol);
-    return rv;
-}
-
-lval *lval_sexpression()
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SEXPRESSION;
-    rv->value.list.count = 0;
-    rv->value.list.cell = 0;
-    return rv;
-}
-
-lval *lval_add(lval *v, lval *x)
-{
-    v->value.list.count++;
-    v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
-    v->value.list.cell[v->value.list.count - 1] = x;
-    return v;
-}
-
-lval *lval_read_long(const mpc_ast_t *tree)
-{
-    errno = 0;
-    long num = strtol(tree->contents, NULL, 10);
-    return errno != ERANGE ? lval_long(num) : lval_error("invalid number");
-}
-
-lval *lval_read_double(const mpc_ast_t *tree)
-{
-    errno = 0;
-    double num = strtod(tree->contents, NULL);
-    return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal");
 }
 
 lval *lval_read(const mpc_ast_t *tree)
