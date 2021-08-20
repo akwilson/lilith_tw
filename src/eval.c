@@ -5,13 +5,26 @@
 #include "mpc.h"
 #include "lilith_int.h"
 
-//#define IOPS $(SUB, -) $(MUL, *) $(DIV, /) $(MOD, %) $(ADD, +) $(AND, &) $(OR, |) $(XOR, ^) $(SR, >>) $(SL, <<)
-#define IOPS $(SUB, -) $(MUL, *) $(DIV, /) $(ADD, +)
+#define IOPS2 $(SUB, sub_l, sub_d) $(MUL, mul_l, mul_d) $(DIV, div_l, div_d) $(ADD, add_l, add_d) \
+    $(POW, powl, pow) $(MAX, max_l, max_d) $(MIN, min_l, min_d)
+
+static long add_l(long x, long y) { return x + y; }
+static double add_d(double x, double y) { return x + y; }
+static long sub_l(long x, long y) { return x - y; }
+static double sub_d(double x, double y) { return x - y; }
+static long mul_l(long x, long y) { return x * y; }
+static double mul_d(double x, double y) { return x * y; }
+static long div_l(long x, long y) { return x / y; }
+static double div_d(double x, double y) { return x / y; }
+static long max_l(long x, long y) { return x > y ? x : y; }
+static double max_d(double x, double y) { return x > y ? x : y; }
+static long min_l(long x, long y) { return x < y ? x : y; }
+static double min_d(double x, double y) { return x < y ? x : y; }
 
 enum iops_enum
 {
-#define $(x, op)   IOPSENUM_##x,
-  IOPS
+#define $(x, lop, dop)   IOPSENUM_##x,
+  IOPS2
   IOPSENUM_COUNT
 #undef $
 };
@@ -21,87 +34,35 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
     lval *rv;
     static void *ll_jump_table[] =
     {
-#define $(x, op)   &&LL_##x,
-        IOPS
+#define $(x, lop, dop)   &&LL_##x,
+        IOPS2
 #undef $
     };
 
     goto *(ll_jump_table[iop]);
 
-#define $(x, op) LL_##x:                                            \
-    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)         \
-    {                                                               \
-        rv = lval_long(xval->value.num_l op yval->value.num_l);     \
-    }                                                               \
-    else if (xval->type == LVAL_LONG)                               \
-    {                                                               \
-        rv = lval_double(xval->value.num_l op yval->value.num_d);   \
-    }                                                               \
-    else if (yval->type == LVAL_LONG)                               \
-    {                                                               \
-        rv = lval_double(xval->value.num_d op yval->value.num_l);   \
-    }                                                               \
-    else                                                            \
-    {                                                               \
-        rv = lval_double(xval->value.num_d op yval->value.num_d);   \
-    }                                                               \
-    lval_del(xval);                                                 \
-    lval_del(yval);                                                 \
+#define $(x, lop, dop) LL_##x:                                       \
+    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)          \
+    {                                                                \
+        rv = lval_long(lop(xval->value.num_l, yval->value.num_l));   \
+    }                                                                \
+    else if (xval->type == LVAL_LONG)                                \
+    {                                                                \
+        rv = lval_double(dop(xval->value.num_l, yval->value.num_d)); \
+    }                                                                \
+    else if (yval->type == LVAL_LONG)                                \
+    {                                                                \
+        rv = lval_double(dop(xval->value.num_d, yval->value.num_l)); \
+    }                                                                \
+    else                                                             \
+    {                                                                \
+        rv = lval_double(dop(xval->value.num_d, yval->value.num_d)); \
+    }                                                                \
+    lval_del(xval);                                                  \
+    lval_del(yval);                                                  \
     return rv;
-    IOPS
+    IOPS2
 #undef $
-}
-
-static lval *max(lval *xval, lval *yval)
-{
-    lval *rv;
-
-    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)
-    {
-        rv = lval_long(xval->value.num_l > yval->value.num_l ? xval->value.num_l : yval->value.num_l);
-    }
-    else if (xval->type == LVAL_LONG)
-    {
-        rv = lval_double(xval->value.num_l > yval->value.num_d ? xval->value.num_l : yval->value.num_d);
-    }
-    else if (yval->type == LVAL_LONG)
-    {
-        rv = lval_double(xval->value.num_d > yval->value.num_l ? xval->value.num_d : yval->value.num_l);
-    }
-    else
-    {
-        rv = lval_double(xval->value.num_d > yval->value.num_d ? xval->value.num_d : yval->value.num_d);
-    }
-
-    lval_del(xval);
-    lval_del(yval);
-    return rv;
-}
-
-static lval *min(lval *xval, lval *yval)
-{
-    lval *rv;
-
-    if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)
-    {
-        rv = lval_long(xval->value.num_l < yval->value.num_l ? xval->value.num_l : yval->value.num_l);
-    }
-    else if (xval->type == LVAL_LONG)
-    {
-        rv = lval_double(xval->value.num_l < yval->value.num_d ? xval->value.num_l : yval->value.num_d);
-    }
-    else if (yval->type == LVAL_LONG)
-    {
-        rv = lval_double(xval->value.num_d < yval->value.num_l ? xval->value.num_d : yval->value.num_l);
-    }
-    else
-    {
-        rv = lval_double(xval->value.num_d < yval->value.num_d ? xval->value.num_d : yval->value.num_d);
-    }
-
-    lval_del(xval);
-    lval_del(yval);
-    return rv;
 }
 
 static lval *lval_pop(lval *val, int i)
@@ -186,11 +147,15 @@ static lval *builtin_op(lval *a, const char *op)
         }
         else if (strcmp(op, "max") == 0)
         {
-            x = max(x, y);
+            x = do_calc(IOPSENUM_MAX, x, y);
         }
         else if (strcmp(op, "min") == 0)
         {
-            x = min(x, y);
+            x = do_calc(IOPSENUM_MIN, x, y);
+        }
+        else if (strcmp(op, "^") == 0)
+        {
+            x = do_calc(IOPSENUM_POW, x, y);
         }
     }
 
