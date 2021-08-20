@@ -1,20 +1,14 @@
-#ifndef LILITH_INT_H
-#define LILITH_INT_H
+#pragma once
 
 #include "mpc.h"
 
 /**
- * LVal types
+ * Lisp Value types
  */
-enum { LVAL_LONG, LVAL_DOUBLE, LVAL_ERROR };
+enum { LVAL_ERROR, LVAL_LONG, LVAL_DOUBLE, LVAL_SYMBOL, LVAL_SEXPRESSION };
 
 /**
- * Error codes
- */
-enum { LERR_DIV_ZERO, LERR_BAD_NUM, LERR_BAD_OP };
-
-/**
- * Lisp value
+ * Lisp Value -- a node in an expression.
  */
 typedef struct lval
 {
@@ -22,16 +16,65 @@ typedef struct lval
     union {
         long num_l;
         double num_d;
-        int error;
+        const char* error;
+        char* symbol;
+        struct {
+            int count;
+            struct lval **cell;
+        } list;
     } value;
 } lval;
 
-lval lval_long(long num);
-lval lval_double(double num);
-lval lval_error(int error);
-void lval_print(lval v);
-void lval_println(lval v);
-lval eval(mpc_ast_t *tree);
+/**
+ * Generates a new lval for a long integer.
+ */
+lval *lval_long(long num);
 
-#endif
+/**
+ * Generates a new lval for a double.
+ */
+lval *lval_double(double num);
 
+/**
+ * Generates a new lval with an error message.
+ */
+lval *lval_error(const char *error);
+
+/**
+ * Genereates a new lval for a symbol.
+ */
+lval *lval_symbol(char *symbol);
+
+/**
+ * Generates a new lval for an s-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
+ */
+lval *lval_sexpression(void);
+
+/**
+ * Converts an AST in to a hierarchy of lval nodes.
+ */
+lval *lval_read(const mpc_ast_t *tree);
+
+/**
+ * Prints the contents of an lval to the screen.
+ */
+void lval_print(const lval *v);
+
+/**
+ * Prints the contents of an lval to the screen with a newline.
+ */
+void lval_println(const lval *v);
+
+/**
+ * Frees up an lval.
+ */
+void lval_del(lval *v);
+
+/**
+ * Evaluates an lval expression.
+ * 
+ * @param input an lval expression
+ * @returns     an lval node with the evaluated result
+ */
+lval *lval_eval(lval *input);

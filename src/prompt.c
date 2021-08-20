@@ -37,19 +37,21 @@ int main(int argc, char *argv[])
 
     mpc_parser_t *number = mpc_new("number");
     mpc_parser_t *decimal = mpc_new("decimal");
-    mpc_parser_t *operator = mpc_new("operator");
+    mpc_parser_t *symbol = mpc_new("symbol");
+    mpc_parser_t *sexpression = mpc_new("sexpression");
     mpc_parser_t *expression = mpc_new("expression");
     mpc_parser_t *lilith = mpc_new("lilith");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-            "                                                                          \
-                number     : /-?[0-9]+/ ;                                              \
-                decimal    : /-?[0-9]+\\.[0-9]+/ ;                                     \
-                operator   : '+' | '-' | '*' | '/' | '%' | '^' | \"max\" | \"min\" ;   \
-                expression : <decimal> | <number> | '(' <operator> <expression>+ ')' ; \
-                lilith     : /^/ <operator> <expression>+ /$/ ;                        \
+            "                                                                         \
+                number      : /-?[0-9]+/ ;                                            \
+                decimal     : /-?[0-9]+\\.[0-9]+/ ;                                   \
+                symbol      : '+' | '-' | '*' | '/' | '%' | '^' | \"max\" | \"min\" ; \
+                sexpression : '(' <expression>* ')' ;                                 \
+                expression  : <decimal> | <number> | <symbol> | <sexpression> ;       \
+                lilith      : /^/ <expression>* /$/ ;                                 \
             ",
-            number, decimal, operator, expression, lilith);
+            number, decimal, symbol, sexpression, expression, lilith);
 
     printf("Lilith Lisp v0.0.1\n");
     printf("Ctrl+C to exit\n\n");
@@ -68,8 +70,9 @@ int main(int argc, char *argv[])
                 printf("Leaf count: %d\n", leaf_count(parse_result.output, 0));
             }
 
-            lval result = eval(parse_result.output);
+            lval *result = lval_eval(lval_read(parse_result.output));
             lval_println(result);
+            lval_del(result);
             mpc_ast_delete(parse_result.output);
         }
         else
@@ -81,7 +84,6 @@ int main(int argc, char *argv[])
         free(input);
     }
 
-    mpc_cleanup(5, number, decimal, operator, expression, lilith);
+    mpc_cleanup(6, number, decimal, symbol, sexpression, expression, lilith);
     return 0;
 }
-
