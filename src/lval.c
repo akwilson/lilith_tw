@@ -44,6 +44,9 @@ static lval *lval_sexpression()
     return rv;
 }
 
+/**
+ * Adds an lval to an s-expression.
+ */
 static lval *lval_add(lval *v, lval *x)
 {
     v->value.list.count++;
@@ -52,6 +55,9 @@ static lval *lval_add(lval *v, lval *x)
     return v;
 }
 
+/**
+ * Reads a long value from an AST.
+ */
 static lval *lval_read_long(const mpc_ast_t *tree)
 {
     errno = 0;
@@ -59,6 +65,9 @@ static lval *lval_read_long(const mpc_ast_t *tree)
     return errno != ERANGE ? lval_long(num) : lval_error("invalid number");
 }
 
+/**
+ * Reads a double value from an AST.
+ */
 static lval *lval_read_double(const mpc_ast_t *tree)
 {
     errno = 0;
