@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <editline/readline.h>
+
+#ifdef __linux
+#include <editline/history.h>
+#endif
+
 #include "mpc.h"
 #include "lilith_int.h"
 
