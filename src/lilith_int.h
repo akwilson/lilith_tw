@@ -3,9 +3,16 @@
 #include "mpc.h"
 
 /**
- * Lisp Value types
+ * Lisp Value types.
  */
-enum { LVAL_ERROR, LVAL_LONG, LVAL_DOUBLE, LVAL_SYMBOL, LVAL_SEXPRESSION };
+enum
+{
+    LVAL_ERROR,
+    LVAL_LONG,
+    LVAL_DOUBLE,
+    LVAL_SYMBOL,
+    LVAL_SEXPRESSION
+};
 
 /**
  * Lisp Value -- a node in an expression.
@@ -13,12 +20,14 @@ enum { LVAL_ERROR, LVAL_LONG, LVAL_DOUBLE, LVAL_SYMBOL, LVAL_SEXPRESSION };
 typedef struct lval
 {
     int type;
-    union {
+    union
+    {
         long num_l;
         double num_d;
-        const char* error;
-        char* symbol;
-        struct {
+        const char *error;
+        char *symbol;
+        struct
+        {
             int count;
             struct lval **cell;
         } list;

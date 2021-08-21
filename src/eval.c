@@ -61,7 +61,7 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
 
     goto *(jump_table[iop]);
 
-#define $(X, LOP, DOP) JT_##X:                                          \
+#define $(X, LOP, DOP) JT_##X:                                       \
     if (xval->type == LVAL_LONG && yval->type == LVAL_LONG)          \
     {                                                                \
         rv = lval_long(LOP(xval->value.num_l, yval->value.num_l));   \

@@ -1,3 +1,7 @@
+/*
+ * Functions for reading, constructing and printing Lisp Values.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "lilith_int.h"
@@ -5,12 +9,14 @@
 static void lval_expr_print(const lval *v, char open, char close)
 {
     putchar(open);
-    for (int i = 0; i < v->value.list.count; i++) {
-        /* Print Value contained within */
+    for (int i = 0; i < v->value.list.count; i++)
+    {
+        // Print Value contained within
         lval_print(v->value.list.cell[i]);
 
-        /* Don't print trailing space if last element */
-        if (i != (v->value.list.count - 1)) {
+        // Don't print trailing space if last element
+        if (i != (v->value.list.count - 1))
+        {
             putchar(' ');
         }
     }
@@ -101,7 +107,7 @@ lval *lval_error(const char *error)
 
 lval *lval_read(const mpc_ast_t *tree)
 {
-    /* If Symbol or Number return conversion to that type */
+    // If Symbol or Number return conversion to that type
     if (strstr(tree->tag, "number"))
     {
         return lval_read_long(tree);
@@ -117,14 +123,14 @@ lval *lval_read(const mpc_ast_t *tree)
         return lval_symbol(tree->contents);
     }
 
-    /* If root (>) or sexpr then create empty list */
+    // If root (>) or sexpr then create empty list
     lval *x = 0;
     if ((strcmp(tree->tag, ">") == 0) || (strstr(tree->tag, "sexpr")))
     {
         x = lval_sexpression();
     }
 
-    /* Fill this list with any valid expression contained within */
+    // Fill this list with any valid expression contained within
     for (int i = 0; i < tree->children_num; i++)
     {
         if ((strcmp(tree->children[i]->contents, "(") == 0) ||
@@ -180,7 +186,8 @@ void lval_del(lval *v)
         free(v->value.symbol);
         break;
     case LVAL_SEXPRESSION:
-        for (int i = 0; i < v->value.list.count; i++) {
+        for (int i = 0; i < v->value.list.count; i++)
+        {
             lval_del(v->value.list.cell[i]);
         }
 
