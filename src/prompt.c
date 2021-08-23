@@ -53,7 +53,8 @@ int main(int argc, char *argv[])
                 number      : /-?[0-9]+/ ;                                                      \
                 decimal     : /-?[0-9]+\\.[0-9]+/ ;                                             \
                 symbol      : '+' | '-' | '*' | '/' | '%' | '^' | \"max\" | \"min\" |           \
-                              \"head\" | \"tail\" | \"join\" | \"list\" | \"eval\" | \"len\";   \
+                              \"head\" | \"tail\" | \"join\" | \"list\" | \"eval\" | \"len\" |  \
+                              \"cons\";                                                         \
                 sexpression : '(' <expression>* ')' ;                                           \
                 qexpression : '{' <expression>* '}' ;                                           \
                 expression  : <decimal> | <number> | <symbol> | <sexpression> | <qexpression> ; \

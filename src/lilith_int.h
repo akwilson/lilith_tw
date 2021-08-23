@@ -51,6 +51,12 @@ lval *lval_double(double num);
 lval *lval_error(const char *error);
 
 /**
+ * Generates a new lval for a q-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
+ */
+lval *lval_qexpression();
+
+/**
  * Adds an lval to an s-expression.
  */
 lval *lval_add(lval *v, lval *x);

@@ -214,6 +214,28 @@ static lval *builtin_len(lval *val)
     return lval_long(LVAL_EXPR_CNT(x));
 }
 
+/**
+ * Built-in function to add an element to the start of a q-expression.
+ */
+static lval *builtin_cons(lval *val)
+{
+    LASSERT(val, LVAL_EXPR_CNT(val) == 2, "'cons' takes two parameters only");
+    LASSERT(val,
+        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_SYMBOL,
+        "first 'cons' parameter should be a value or a symbol");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 1)->type == LVAL_QEXPRESSION, "second 'cons' parameter should be a q-expression");
+
+    lval *rv = lval_qexpression();
+    rv = lval_add(rv, lval_pop(val, 0));
+    while (LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 1)))
+    {
+        rv = lval_add(rv, lval_pop(LVAL_EXPR_ITEM(val, 1), 0));
+    }
+    
+    lval_del(val);
+    return rv;
+}
+
 static lval *builtin_op(lval *a, const char *op)
 {
     // Confirm that all arguments are numeric values
@@ -323,6 +345,10 @@ static lval *builtin(lval *val, const char *func)
     else if (strcmp("len", func) == 0)
     {
         return builtin_len(val);
+    }
+    else if (strcmp("cons", func) == 0)
+    {
+        return builtin_cons(val);
     }
     else
     {

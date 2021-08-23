@@ -50,19 +50,6 @@ static lval *lval_sexpression()
 }
 
 /**
- * Generates a new lval for a q-expression. The returned value
- * contains no data and represents the start of an lval hierarchy.
- */
-static lval *lval_qexpression()
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_QEXPRESSION;
-    rv->value.list.count = 0;
-    rv->value.list.cell = 0;
-    return rv;
-}
-
-/**
  * Reads a long value from an AST.
  */
 static lval *lval_read_long(const mpc_ast_t *tree)
@@ -103,6 +90,15 @@ lval *lval_error(const char *error)
     lval *rv = malloc(sizeof(lval));
     rv->type = LVAL_ERROR;
     rv->value.error = error;
+    return rv;
+}
+
+lval *lval_qexpression()
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_QEXPRESSION;
+    rv->value.list.count = 0;
+    rv->value.list.cell = 0;
     return rv;
 }
 
