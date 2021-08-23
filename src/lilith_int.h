@@ -11,7 +11,8 @@ enum
     LVAL_LONG,
     LVAL_DOUBLE,
     LVAL_SYMBOL,
-    LVAL_SEXPRESSION
+    LVAL_SEXPRESSION,
+    LVAL_QEXPRESSION
 };
 
 /**
@@ -48,6 +49,11 @@ lval *lval_double(double num);
  * Generates a new lval with an error message.
  */
 lval *lval_error(const char *error);
+
+/**
+ * Adds an lval to an s-expression.
+ */
+lval *lval_add(lval *v, lval *x);
 
 /**
  * Converts an AST in to a hierarchy of lval nodes.

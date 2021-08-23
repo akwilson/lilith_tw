@@ -10,6 +10,8 @@
 #include "mpc.h"
 #include "lilith_int.h"
 
+#define LASSERT(args, cond, err) if (!(cond)) { lval_del(args); return lval_error(err); }
+
 /*
  * A macro defining the available operations. The first argument is the goto label; the second the name
  * of the function when both params are longs; the third the function for doubles.
@@ -110,6 +112,94 @@ static lval *lval_take(lval *val, int i)
     return x;
 }
 
+/**
+ * Built-in function to return the first element of a q-expression.
+ */
+static lval *builtin_head(lval *val)
+{
+    LASSERT(val, val->value.list.count == 1, "too many parameters to 'head'");
+    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'head'");
+    LASSERT(val, val->value.list.cell[0]->value.list.count != 0, "empty q-expression passed to 'head'");
+
+    lval *rv = lval_take(val, 0);
+    while (rv->value.list.count > 1)
+    {
+        lval_del(lval_pop(rv, 1));
+    }
+
+    return rv;
+}
+
+/**
+ * Built-in function to return all elements of a q-expression except the first.
+ */
+static lval *builtin_tail(lval *val)
+{
+    LASSERT(val, val->value.list.count == 1, "too many parameters to 'tail'");
+    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'tail'");
+    LASSERT(val, val->value.list.cell[0]->value.list.count != 0, "empty q-expression passed to 'tail'");
+
+    lval *rv = lval_take(val, 0);
+    lval_del(lval_pop(rv, 0));
+    return rv;
+}
+
+/**
+ * Built-in function to evaluate a q-expression.
+ */
+static lval *builtin_eval(lval *val)
+{
+    LASSERT(val, val->value.list.count == 1, "too many parameters to 'eval'");
+    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'eval'");
+
+    lval *x = lval_take(val, 0);
+    x->type = LVAL_SEXPRESSION;
+    return lval_eval(x);
+}
+
+/**
+ * Built-in function to convert an s-expression in to a q-expression.
+ */
+static lval *builtin_list(lval *val)
+{
+    val->type = LVAL_QEXPRESSION;
+    return val;
+}
+
+/**
+ * Add all elements of the second q-expression to the first.
+ */
+static lval *lval_join(lval *x, lval* y)
+{
+    while (y->value.list.count)
+    {
+        x = lval_add(x, lval_pop(y, 0));
+    }
+
+    lval_del(y);
+    return x;
+}
+
+/**
+ * Built-in function to join q-expressions together.
+ */
+static lval *builtin_join(lval *val)
+{
+    for (int i = 0; i < val->value.list.count; i++)
+    {
+        LASSERT(val, val->value.list.cell[i]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'join'");
+    }
+
+    lval *x = lval_pop(val, 0);
+    while (val->value.list.count)
+    {
+        x = lval_join(x, lval_pop(val, 0));
+    }
+
+    lval_del(val);
+    return x;
+}
+
 static lval *builtin_op(lval *a, const char *op)
 {
     // Confirm that all arguments are numeric values
@@ -118,7 +208,7 @@ static lval *builtin_op(lval *a, const char *op)
         if (a->value.list.cell[i]->type != LVAL_LONG && a->value.list.cell[i]->type != LVAL_DOUBLE)
         {
             lval_del(a);
-            return lval_error("Cannot operate on non-numeric value");
+            return lval_error("cannot operate on non-numeric value");
         }
     }
 
@@ -160,7 +250,7 @@ static lval *builtin_op(lval *a, const char *op)
             {
                 lval_del(x);
                 lval_del(y);
-                x = lval_error("Division By Zero");
+                x = lval_error("division by zero");
                 break;
             }
 
@@ -186,12 +276,42 @@ static lval *builtin_op(lval *a, const char *op)
         {
             lval_del(x);
             lval_del(y);
-            x = lval_error("Unrecognized operator");
+            x = lval_error("unrecognized operator");
         }
     }
 
     lval_del(a);
     return x;
+}
+
+static lval *builtin(lval *val, const char *func)
+{
+    if (strcmp("list", func) == 0)
+    {
+        return builtin_list(val);
+    }
+    else if (strcmp("head", func) == 0)
+    {
+        return builtin_head(val);
+    }
+    else if (strcmp("tail", func) == 0)
+    {
+        return builtin_tail(val);
+    }
+    else if (strcmp("join", func) == 0)
+    {
+        return builtin_join(val);
+    }
+    else if (strcmp("eval", func) == 0)
+    {
+        return builtin_eval(val);
+    }
+    else
+    {
+        return builtin_op(val, func);
+    }
+
+    lval_del(val);
 }
 
 static lval *lval_eval_sexpr(lval *val)
@@ -229,11 +349,11 @@ static lval *lval_eval_sexpr(lval *val)
     {
         lval_del(first);
         lval_del(val);
-        return lval_error("S-expression does not start with symbol");
+        return lval_error("s-expression does not start with symbol");
     }
 
     // Call built-in with operator
-    lval *result = builtin_op(val, first->value.symbol);
+    lval *result = builtin(val, first->value.symbol);
     lval_del(first);
     return result;
 }

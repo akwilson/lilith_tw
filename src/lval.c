@@ -24,7 +24,6 @@ static void lval_expr_print(const lval *v, char open, char close)
     putchar(close);
 }
 
-
 /**
  * Genereates a new lval for a symbol.
  */
@@ -51,14 +50,16 @@ static lval *lval_sexpression()
 }
 
 /**
- * Adds an lval to an s-expression.
+ * Generates a new lval for a q-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
  */
-static lval *lval_add(lval *v, lval *x)
+static lval *lval_qexpression()
 {
-    v->value.list.count++;
-    v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
-    v->value.list.cell[v->value.list.count - 1] = x;
-    return v;
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_QEXPRESSION;
+    rv->value.list.count = 0;
+    rv->value.list.cell = 0;
+    return rv;
 }
 
 /**
@@ -105,6 +106,14 @@ lval *lval_error(const char *error)
     return rv;
 }
 
+lval *lval_add(lval *v, lval *x)
+{
+    v->value.list.count++;
+    v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
+    v->value.list.cell[v->value.list.count - 1] = x;
+    return v;
+}
+
 lval *lval_read(const mpc_ast_t *tree)
 {
     // If Symbol or Number return conversion to that type
@@ -123,11 +132,15 @@ lval *lval_read(const mpc_ast_t *tree)
         return lval_symbol(tree->contents);
     }
 
-    // If root (>) or sexpr then create empty list
+    // If root (>), sexpression or qexpression then create empty list
     lval *x = 0;
-    if ((strcmp(tree->tag, ">") == 0) || (strstr(tree->tag, "sexpr")))
+    if ((strcmp(tree->tag, ">") == 0) || (strstr(tree->tag, "sexpression")))
     {
         x = lval_sexpression();
+    }
+    else if (strstr(tree->tag, "qexpression"))
+    {
+        x = lval_qexpression();
     }
 
     // Fill this list with any valid expression contained within
@@ -135,6 +148,8 @@ lval *lval_read(const mpc_ast_t *tree)
     {
         if ((strcmp(tree->children[i]->contents, "(") == 0) ||
             (strcmp(tree->children[i]->contents, ")") == 0) ||
+            (strcmp(tree->children[i]->contents, "{") == 0) ||
+            (strcmp(tree->children[i]->contents, "}") == 0) ||
             (strcmp(tree->children[i]->tag,  "regex") == 0))
         {
             continue;
@@ -165,6 +180,9 @@ void lval_print(const lval *v)
     case LVAL_SEXPRESSION:
         lval_expr_print(v, '(', ')');
         break;
+    case LVAL_QEXPRESSION:
+        lval_expr_print(v, '{', '}');
+        break;
     }
 }
 
@@ -186,6 +204,7 @@ void lval_del(lval *v)
         free(v->value.symbol);
         break;
     case LVAL_SEXPRESSION:
+    case LVAL_QEXPRESSION:
         for (int i = 0; i < v->value.list.count; i++)
         {
             lval_del(v->value.list.cell[i]);
