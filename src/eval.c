@@ -11,6 +11,9 @@
 #include "lilith_int.h"
 
 #define LASSERT(args, cond, err) if (!(cond)) { lval_del(args); return lval_error(err); }
+#define LVAL_EXPR_CNT(arg) arg->value.list.count
+#define LVAL_EXPR_LST(arg) arg->value.list.cell
+#define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
 
 /*
  * A macro defining the available operations. The first argument is the goto label; the second the name
@@ -90,18 +93,17 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
 
 static lval *lval_pop(lval *val, int i)
 {
-    lval *x = val->value.list.cell[i];
+    lval *x = LVAL_EXPR_ITEM(val, i);
 
     // Shift memory after the item at "i" over the top
-    memmove(&val->value.list.cell[i], &val->value.list.cell[i + 1],
-        sizeof(lval*) * (val->value.list.count - i - 1));
+    memmove(&LVAL_EXPR_ITEM(val, i), &LVAL_EXPR_ITEM(val, i + 1),
+        sizeof(lval*) * (LVAL_EXPR_CNT(val) - i - 1));
 
     // Decrease the count of items in the list
-    val->value.list.count--;
+    LVAL_EXPR_CNT(val)--;
 
     // Reallocate the memory used
-    val->value.list.cell =
-        realloc(val->value.list.cell, sizeof(lval*) * val->value.list.count);
+    LVAL_EXPR_LST(val) = realloc(LVAL_EXPR_LST(val), sizeof(lval*) * LVAL_EXPR_CNT(val));
     return x;
 }
 
@@ -117,9 +119,9 @@ static lval *lval_take(lval *val, int i)
  */
 static lval *builtin_head(lval *val)
 {
-    LASSERT(val, val->value.list.count == 1, "too many parameters to 'head'");
-    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'head'");
-    LASSERT(val, val->value.list.cell[0]->value.list.count != 0, "empty q-expression passed to 'head'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'head'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'head'");
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'head'");
 
     lval *rv = lval_take(val, 0);
     while (rv->value.list.count > 1)
@@ -135,9 +137,9 @@ static lval *builtin_head(lval *val)
  */
 static lval *builtin_tail(lval *val)
 {
-    LASSERT(val, val->value.list.count == 1, "too many parameters to 'tail'");
-    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'tail'");
-    LASSERT(val, val->value.list.cell[0]->value.list.count != 0, "empty q-expression passed to 'tail'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'tail'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'tail'");
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'tail'");
 
     lval *rv = lval_take(val, 0);
     lval_del(lval_pop(rv, 0));
@@ -149,8 +151,8 @@ static lval *builtin_tail(lval *val)
  */
 static lval *builtin_eval(lval *val)
 {
-    LASSERT(val, val->value.list.count == 1, "too many parameters to 'eval'");
-    LASSERT(val, val->value.list.cell[0]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'eval'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'eval'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'eval'");
 
     lval *x = lval_take(val, 0);
     x->type = LVAL_SEXPRESSION;
@@ -171,7 +173,7 @@ static lval *builtin_list(lval *val)
  */
 static lval *lval_join(lval *x, lval* y)
 {
-    while (y->value.list.count)
+    while (LVAL_EXPR_CNT(y))
     {
         x = lval_add(x, lval_pop(y, 0));
     }
@@ -185,13 +187,13 @@ static lval *lval_join(lval *x, lval* y)
  */
 static lval *builtin_join(lval *val)
 {
-    for (int i = 0; i < val->value.list.count; i++)
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        LASSERT(val, val->value.list.cell[i]->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'join'");
+        LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'join'");
     }
 
     lval *x = lval_pop(val, 0);
-    while (val->value.list.count)
+    while (LVAL_EXPR_CNT(val))
     {
         x = lval_join(x, lval_pop(val, 0));
     }
@@ -203,9 +205,9 @@ static lval *builtin_join(lval *val)
 static lval *builtin_op(lval *a, const char *op)
 {
     // Confirm that all arguments are numeric values
-    for (int i = 0; i < a->value.list.count; i++)
+    for (int i = 0; i < LVAL_EXPR_CNT(a); i++)
     {
-        if (a->value.list.cell[i]->type != LVAL_LONG && a->value.list.cell[i]->type != LVAL_DOUBLE)
+        if (LVAL_EXPR_ITEM(a, i)->type != LVAL_LONG && LVAL_EXPR_ITEM(a, i)->type != LVAL_DOUBLE)
         {
             lval_del(a);
             return lval_error("cannot operate on non-numeric value");
@@ -216,7 +218,7 @@ static lval *builtin_op(lval *a, const char *op)
     lval *x = lval_pop(a, 0);
 
     // If single arument subtraction, negate value
-    if (a->value.list.count == 0 && (strcmp(op, "-") == 0))
+    if (LVAL_EXPR_CNT(a) == 0 && (strcmp(op, "-") == 0))
     {
         if (x->type == LVAL_LONG)
         {
@@ -229,7 +231,7 @@ static lval *builtin_op(lval *a, const char *op)
     }
 
     // While elements remain
-    while (a->value.list.count > 0)
+    while (LVAL_EXPR_CNT(a) > 0)
     {
         lval *y = lval_pop(a, 0);
         if (strcmp(op, "+") == 0)
@@ -317,28 +319,28 @@ static lval *builtin(lval *val, const char *func)
 static lval *lval_eval_sexpr(lval *val)
 {
     // Evaluate children
-    for (int i = 0; i < val->value.list.count; i++)
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        val->value.list.cell[i] = lval_eval(val->value.list.cell[i]);
+        LVAL_EXPR_ITEM(val, i) = lval_eval(LVAL_EXPR_ITEM(val, i));
     }
 
     // Check for errors
-    for (int i = 0; i < val->value.list.count; i++)
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        if (val->value.list.cell[i]->type == LVAL_ERROR)
+        if (LVAL_EXPR_ITEM(val, i)->type == LVAL_ERROR)
         {
             return lval_take(val, i);
         }
     }
 
     // Empty expressions
-    if (val->value.list.count == 0)
+    if (LVAL_EXPR_CNT(val) == 0)
     {
         return val;
     }
 
     // Single expression
-    if (val->value.list.count == 1)
+    if (LVAL_EXPR_CNT(val) == 1)
     {
         return lval_take(val, 0);
     }
