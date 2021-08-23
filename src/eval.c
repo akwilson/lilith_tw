@@ -236,6 +236,20 @@ static lval *builtin_cons(lval *val)
     return rv;
 }
 
+/**
+ * Built-in function to return all elements in a q-expression except the first.
+ */
+static lval *builtin_init(lval *val)
+{
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'init'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'init'");
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'init'");
+
+    lval *rv = lval_take(val, 0);
+    lval_del(lval_pop(rv, LVAL_EXPR_CNT(rv) - 1));
+    return rv;
+}
+
 static lval *builtin_op(lval *a, const char *op)
 {
     // Confirm that all arguments are numeric values
@@ -349,6 +363,10 @@ static lval *builtin(lval *val, const char *func)
     else if (strcmp("cons", func) == 0)
     {
         return builtin_cons(val);
+    }
+    else if (strcmp("init", func) == 0)
+    {
+        return builtin_init(val);
     }
     else
     {
