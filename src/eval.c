@@ -202,6 +202,18 @@ static lval *builtin_join(lval *val)
     return x;
 }
 
+/**
+ * Built-in function to return the number of items in a q-expression.
+ */
+static lval *builtin_len(lval *val)
+{
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'len'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'len'");
+
+    lval *x = lval_take(val, 0);
+    return lval_long(LVAL_EXPR_CNT(x));
+}
+
 static lval *builtin_op(lval *a, const char *op)
 {
     // Confirm that all arguments are numeric values
@@ -307,6 +319,10 @@ static lval *builtin(lval *val, const char *func)
     else if (strcmp("eval", func) == 0)
     {
         return builtin_eval(val);
+    }
+    else if (strcmp("len", func) == 0)
+    {
+        return builtin_len(val);
     }
     else
     {
