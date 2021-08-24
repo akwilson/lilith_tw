@@ -232,8 +232,8 @@ static lval *builtin_cons(lenv *env, lval *val)
     LASSERT(val, env != 0, "environment not set");
     LASSERT(val, LVAL_EXPR_CNT(val) == 2, "'cons' takes two parameters only");
     LASSERT(val,
-        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_SYMBOL,
-        "first 'cons' parameter should be a value or a symbol");
+        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_FUN,
+        "first 'cons' parameter should be a value or a function");
     LASSERT(val, LVAL_EXPR_ITEM(val, 1)->type == LVAL_QEXPRESSION, "second 'cons' parameter should be a q-expression");
 
     lval *rv = lval_qexpression();
