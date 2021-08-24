@@ -45,6 +45,12 @@ struct lval
 };
 
 /**
+ * Generates a new lval for an s-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
+ */
+lval *lval_sexpression();
+
+/**
  * Genereates a new lval for a symbol.
  */
 lval *lval_symbol(char *symbol);

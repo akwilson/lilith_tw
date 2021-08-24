@@ -303,6 +303,35 @@ static lval *builtin_op(lenv *env, lval *a, enum iops_enum iop)
     return x;
 }
 
+/**
+ * Built-in function for defining new symbols. First argument in val's list
+ * is a q-expression with one or more symbols. Additional arguments are values
+ * that map to those symbols.
+ */
+static lval *builtin_def(lenv *env, lval *val)
+{
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'def'");
+
+    // First argument is a symbol list
+    lval *syms = LVAL_EXPR_ITEM(val, 0);
+    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
+    {
+        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL, "Function 'def' cannot define non-symbol");
+    }
+
+    LASSERT(val, LVAL_EXPR_CNT(syms) == LVAL_EXPR_CNT(val) - 1,
+        "Function 'def' cannot define incorrect number of values to symbols");
+    
+    // Assign symbols to values
+    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
+    {
+        lenv_put(env, LVAL_EXPR_ITEM(syms, i), LVAL_EXPR_ITEM(val, i + 1));
+    }
+
+    lval_del(val);
+    return lval_sexpression();
+}
+
 static lval *builtin_add(lenv *env, lval *val) { return builtin_op(env, val, IOPSENUM_ADD); }
 static lval *builtin_sub(lenv *env, lval *val) { return builtin_op(env, val, IOPSENUM_SUB); }
 static lval *builtin_div(lenv *env, lval *val) { return builtin_op(env, val, IOPSENUM_DIV); }
@@ -396,6 +425,7 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, "^", builtin_pow);
     lenv_add_builtin(e, "%", builtin_mod);
 
+    lenv_add_builtin(e, "def", builtin_def);
     lenv_add_builtin(e, "list", builtin_list);
     lenv_add_builtin(e, "head", builtin_head);
     lenv_add_builtin(e, "tail", builtin_tail);

@@ -25,19 +25,6 @@ static void lval_expr_print(const lval *v, char open, char close)
 }
 
 /**
- * Generates a new lval for an s-expression. The returned value
- * contains no data and represents the start of an lval hierarchy.
- */
-static lval *lval_sexpression()
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SEXPRESSION;
-    rv->value.list.count = 0;
-    rv->value.list.cell = 0;
-    return rv;
-}
-
-/**
  * Reads a long value from an AST.
  */
 static lval *lval_read_long(const mpc_ast_t *tree)
@@ -55,6 +42,15 @@ static lval *lval_read_double(const mpc_ast_t *tree)
     errno = 0;
     double num = strtod(tree->contents, NULL);
     return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal");
+}
+
+lval *lval_sexpression()
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SEXPRESSION;
+    rv->value.list.count = 0;
+    rv->value.list.cell = 0;
+    return rv;
 }
 
 lval *lval_symbol(char *symbol)
