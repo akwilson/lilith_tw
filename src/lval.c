@@ -25,18 +25,6 @@ static void lval_expr_print(const lval *v, char open, char close)
 }
 
 /**
- * Genereates a new lval for a symbol.
- */
-static lval *lval_symbol(char *symbol)
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SYMBOL;
-    rv->value.symbol = malloc(strlen(symbol) + 1);
-    strcpy(rv->value.symbol, symbol);
-    return rv;
-}
-
-/**
  * Generates a new lval for an s-expression. The returned value
  * contains no data and represents the start of an lval hierarchy.
  */
@@ -67,6 +55,23 @@ static lval *lval_read_double(const mpc_ast_t *tree)
     errno = 0;
     double num = strtod(tree->contents, NULL);
     return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal");
+}
+
+lval *lval_symbol(char *symbol)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SYMBOL;
+    rv->value.symbol = malloc(strlen(symbol) + 1);
+    strcpy(rv->value.symbol, symbol);
+    return rv;
+}
+
+lval *lval_fun(lbuiltin function)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_FUN;
+    rv->value.fun = function;
+    return rv;
 }
 
 lval *lval_long(long num)
@@ -173,6 +178,9 @@ void lval_print(const lval *v)
     case LVAL_ERROR:
         printf("Error: %s", v->value.error);
         break;
+    case LVAL_FUN:
+        printf("<function>");
+        break;
     case LVAL_SEXPRESSION:
         lval_expr_print(v, '(', ')');
         break;
@@ -195,6 +203,7 @@ void lval_del(lval *v)
     case LVAL_LONG:
     case LVAL_DOUBLE:
     case LVAL_ERROR:
+    case LVAL_FUN:
         break;
     case LVAL_SYMBOL:
         free(v->value.symbol);
@@ -210,5 +219,42 @@ void lval_del(lval *v)
         break;
     }
 
-    free(v);    
+    free(v);
+}
+
+lval *lval_copy(lval *v)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = v->type;
+
+    switch (v->type)
+    {
+    case LVAL_LONG:
+        rv->value.num_l = v->value.num_l;
+        break;
+    case LVAL_DOUBLE:
+        rv->value.num_d = v->value.num_d;
+        break;
+    case LVAL_FUN:
+        rv->value.fun = v->value.fun;
+        break;
+    case LVAL_ERROR:
+        rv->value.error = v->value.error;
+        break;
+    case LVAL_SYMBOL:
+        rv->value.symbol = malloc(strlen(rv->value.symbol + 1));
+        strcpy(rv->value.symbol, v->value.symbol);
+        break;
+    case LVAL_QEXPRESSION:
+    case LVAL_SEXPRESSION:
+        rv->value.list.count = v->value.list.count;
+        rv->value.list.cell = malloc(sizeof(lval) * rv->value.list.count);
+        for (int i = 0; i < rv->value.list.count; i++)
+        {
+            rv->value.list.cell[i] = lval_copy(v->value.list.cell[i]);
+        }
+        break;
+    }
+
+    return rv;
 }

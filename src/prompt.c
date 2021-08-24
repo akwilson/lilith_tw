@@ -52,15 +52,16 @@ int main(int argc, char *argv[])
             "                                                                                   \
                 number      : /-?[0-9]+/ ;                                                      \
                 decimal     : /-?[0-9]+\\.[0-9]+/ ;                                             \
-                symbol      : '+' | '-' | '*' | '/' | '%' | '^' | \"max\" | \"min\" |           \
-                              \"head\" | \"tail\" | \"join\" | \"list\" | \"eval\" | \"len\" |  \
-                              \"cons\" | \"init\" ;                                             \
+                symbol      : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;                                \
                 sexpression : '(' <expression>* ')' ;                                           \
                 qexpression : '{' <expression>* '}' ;                                           \
                 expression  : <decimal> | <number> | <symbol> | <sexpression> | <qexpression> ; \
                 lilith      : /^/ <expression>* /$/ ;                                           \
             ",
             number, decimal, symbol, sexpression, qexpression, expression, lilith);
+
+    lenv *env = lenv_new();
+    lenv_add_builtins(env);
 
     printf("Lilith Lisp v0.0.1\n");
     printf("Ctrl+C to exit\n\n");
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
                 printf("Leaf count: %d\n", leaf_count(parse_result.output, 0));
             }
 
-            lval *result = lval_eval(lval_read(parse_result.output));
+            lval *result = lval_eval(env, lval_read(parse_result.output));
             lval_println(result);
             lval_del(result);
             mpc_ast_delete(parse_result.output);
@@ -94,5 +95,6 @@ int main(int argc, char *argv[])
     }
 
     mpc_cleanup(7, number, decimal, symbol, sexpression, qexpression, expression, lilith);
+    lenv_del(env);
     return 0;
 }
