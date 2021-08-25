@@ -62,11 +62,13 @@ lval *lval_symbol(char *symbol)
     return rv;
 }
 
-lval *lval_fun(lbuiltin function)
+lval *lval_fun(const char *symbol, lbuiltin function)
 {
     lval *rv = malloc(sizeof(lval));
     rv->type = LVAL_FUN;
-    rv->value.fun = function;
+    rv->value.fhandle.symbol = malloc(strlen(symbol) + 1);
+    strcpy(rv->value.fhandle.symbol, symbol);
+    rv->value.fhandle.fun = function;
     return rv;
 }
 
@@ -213,7 +215,9 @@ void lval_del(lval *v)
     {
     case LVAL_LONG:
     case LVAL_DOUBLE:
+        break;
     case LVAL_FUN:
+        free(v->value.fhandle.symbol);
         break;
     case LVAL_ERROR:
         free(v->value.error);
@@ -249,7 +253,9 @@ lval *lval_copy(lval *v)
         rv->value.num_d = v->value.num_d;
         break;
     case LVAL_FUN:
-        rv->value.fun = v->value.fun;
+        rv->value.fhandle.fun = v->value.fhandle.fun;
+        rv->value.fhandle.symbol = malloc(strlen(v->value.fhandle.symbol) + 1);
+        strcpy(rv->value.fhandle.symbol, v->value.fhandle.symbol);
         break;
     case LVAL_ERROR:
         rv->value.error = v->value.error;

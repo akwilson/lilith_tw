@@ -7,7 +7,7 @@ struct lenv;
 typedef struct lval lval;
 typedef struct lenv lenv;
 
-typedef lval*(*lbuiltin)(lenv*, lval*);
+typedef lval*(*lbuiltin)(lenv*, const char*, lval*);
 
 /**
  * Lisp Value types.
@@ -22,6 +22,12 @@ enum
     LVAL_SEXPRESSION,
     LVAL_QEXPRESSION
 };
+
+typedef struct fun_handle
+{
+    char *symbol;
+    lbuiltin fun;
+} fun_handle;
 
 /**
  * Lisp Value -- a node in an expression.
@@ -40,7 +46,7 @@ struct lval
             int count;
             struct lval **cell;
         } list;
-        lbuiltin fun;
+        fun_handle fhandle;
     } value;
 };
 
@@ -58,7 +64,7 @@ lval *lval_symbol(char *symbol);
 /**
  * Generates a new lval for a function call.
  */
-lval *lval_fun(lbuiltin function);
+lval *lval_fun(const char *symbol, lbuiltin function);
 
 /**
  * Generates a new lval for a long integer.
