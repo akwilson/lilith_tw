@@ -10,13 +10,15 @@
 #include "mpc.h"
 #include "lilith_int.h"
 
-#define LASSERT(args, cond, fmt, ...)               \
-    if (!(cond))                                    \
-    {                                               \
-        lval *err = lval_error(fmt, ##__VA_ARGS__); \
-        lval_del(args);                             \
-        return err;                                 \
-    }
+#define LASSERT(args, cond, fmt, ...)                   \
+    do {                                                \
+        if (!(cond))                                    \
+        {                                               \
+            lval *err = lval_error(fmt, ##__VA_ARGS__); \
+            lval_del(args);                             \
+            return err;                                 \
+        }                                               \
+    } while (0)
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
 #define LVAL_EXPR_LST(arg) arg->value.list.cell
 #define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
@@ -287,11 +289,9 @@ static lval *builtin_op(lenv *env, lval *a, enum iops_enum iop)
     // Confirm that all arguments are numeric values
     for (int i = 0; i < LVAL_EXPR_CNT(a); i++)
     {
-        if (LVAL_EXPR_ITEM(a, i)->type != LVAL_LONG && LVAL_EXPR_ITEM(a, i)->type != LVAL_DOUBLE)
-        {
-            lval_del(a);
-            return lval_error("function %s cannot operate on non-numeric value", a->value.fun);
-        }
+        LASSERT(a, LVAL_EXPR_ITEM(a, i)->type == LVAL_LONG || LVAL_EXPR_ITEM(a, i)->type == LVAL_DOUBLE,
+            "function 'xxx' type mismatch - expected %s, received %s",
+            ltype_name(LVAL_LONG), ltype_name(LVAL_EXPR_ITEM(a, i)->type));
     }
 
     // Get the first value
