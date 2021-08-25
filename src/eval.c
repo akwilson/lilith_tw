@@ -10,7 +10,13 @@
 #include "mpc.h"
 #include "lilith_int.h"
 
-#define LASSERT(args, cond, err) if (!(cond)) { lval_del(args); return lval_error(err); }
+#define LASSERT(args, cond, fmt, ...)               \
+    if (!(cond))                                    \
+    {                                               \
+        lval *err = lval_error(fmt, ##__VA_ARGS__); \
+        lval_del(args);                             \
+        return err;                                 \
+    }
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
 #define LVAL_EXPR_LST(arg) arg->value.list.cell
 #define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
@@ -123,8 +129,10 @@ static lval *lval_take(lval *val, int i)
 static lval *builtin_head(lenv *env, lval *val)
 {
     LASSERT(val, env != 0, "environment not set");
-    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'head'");
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'head'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "function 'head' expects 1 argument, received %d", LVAL_EXPR_CNT(val));
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'head' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
     LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'head'");
 
     lval *rv = lval_take(val, 0);
@@ -142,8 +150,10 @@ static lval *builtin_head(lenv *env, lval *val)
 static lval *builtin_tail(lenv *env, lval *val)
 {
     LASSERT(val, env != 0, "environment not set");
-    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'tail'");
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'tail'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "function 'tail' expects 1 argument, received %d", LVAL_EXPR_CNT(val));
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'tail' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
     LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'tail'");
 
     lval *rv = lval_take(val, 0);
@@ -157,8 +167,10 @@ static lval *builtin_tail(lenv *env, lval *val)
 static lval *builtin_eval(lenv* env, lval *val)
 {
     LASSERT(val, env != 0, "environment not set");
-    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'eval'");
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'eval'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "function 'eval' expects 1 argument, received %d", LVAL_EXPR_CNT(val));
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'eval' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
 
     lval *x = lval_take(val, 0);
     x->type = LVAL_SEXPRESSION;
@@ -198,7 +210,9 @@ static lval *builtin_join(lenv *env, lval *val)
 
     for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'join'");
+        LASSERT(val, LVAL_EXPR_ITEM(val, i)->type == LVAL_QEXPRESSION,
+            "function 'join' type mismatch - expected %s, received %s",
+            ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
     }
 
     lval *x = lval_pop(val, 0);
@@ -217,8 +231,10 @@ static lval *builtin_join(lenv *env, lval *val)
 static lval *builtin_len(lenv *env, lval *val)
 {
     LASSERT(val, env != 0, "environment not set");
-    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'len'");
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'len'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "function 'len' expects 1 argument, received %d", LVAL_EXPR_CNT(val));
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'len' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
 
     lval *x = lval_take(val, 0);
     return lval_long(LVAL_EXPR_CNT(x));
@@ -232,7 +248,7 @@ static lval *builtin_cons(lenv *env, lval *val)
     LASSERT(val, env != 0, "environment not set");
     LASSERT(val, LVAL_EXPR_CNT(val) == 2, "'cons' takes two parameters only");
     LASSERT(val,
-        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_FUN,
+        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_DOUBLE || LVAL_EXPR_ITEM(val, 0)->type == LVAL_FUN,
         "first 'cons' parameter should be a value or a function");
     LASSERT(val, LVAL_EXPR_ITEM(val, 1)->type == LVAL_QEXPRESSION, "second 'cons' parameter should be a q-expression");
 
@@ -253,8 +269,10 @@ static lval *builtin_cons(lenv *env, lval *val)
 static lval *builtin_init(lenv *env, lval *val)
 {
     LASSERT(val, env != 0, "environment not set");
-    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "too many parameters to 'init'");
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'init'");
+    LASSERT(val, LVAL_EXPR_CNT(val) == 1, "function 'init' expects 1 argument, received %d", LVAL_EXPR_CNT(val));
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'init' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
     LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to 'init'");
 
     lval *rv = lval_take(val, 0);
@@ -272,7 +290,7 @@ static lval *builtin_op(lenv *env, lval *a, enum iops_enum iop)
         if (LVAL_EXPR_ITEM(a, i)->type != LVAL_LONG && LVAL_EXPR_ITEM(a, i)->type != LVAL_DOUBLE)
         {
             lval_del(a);
-            return lval_error("cannot operate on non-numeric value");
+            return lval_error("function %s cannot operate on non-numeric value", a->value.fun);
         }
     }
 
@@ -310,17 +328,21 @@ static lval *builtin_op(lenv *env, lval *a, enum iops_enum iop)
  */
 static lval *builtin_def(lenv *env, lval *val)
 {
-    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION, "only q-expressions can be passed to 'def'");
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION,
+        "function 'def' type mismatch - expected %s, received %s",
+        ltype_name(LVAL_QEXPRESSION), ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
 
     // First argument is a symbol list
     lval *syms = LVAL_EXPR_ITEM(val, 0);
     for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
     {
-        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL, "Function 'def' cannot define non-symbol");
+        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL,
+            "function 'def' type mismatch - expected %s, received %s",
+            ltype_name(LVAL_SYMBOL), ltype_name(LVAL_EXPR_ITEM(syms, i)->type));
     }
 
     LASSERT(val, LVAL_EXPR_CNT(syms) == LVAL_EXPR_CNT(val) - 1,
-        "Function 'def' cannot define incorrect number of values to symbols");
+        "function 'def' argument mismatch - %d symbols, %d values", LVAL_EXPR_CNT(syms), LVAL_EXPR_CNT(val) - 1);
     
     // Assign symbols to values
     for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
@@ -385,7 +407,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     {
         lval_del(first);
         lval_del(val);
-        return lval_error("s-expression does not start with symbol");
+        return lval_error("s-expression does not start with function, '%s'", ltype_name(first->type));
     }
 
     // Call function

@@ -31,7 +31,7 @@ static lval *lval_read_long(const mpc_ast_t *tree)
 {
     errno = 0;
     long num = strtol(tree->contents, NULL, 10);
-    return errno != ERANGE ? lval_long(num) : lval_error("invalid number");
+    return errno != ERANGE ? lval_long(num) : lval_error("invalid number: %s", tree->contents);
 }
 
 /**
@@ -41,7 +41,7 @@ static lval *lval_read_double(const mpc_ast_t *tree)
 {
     errno = 0;
     double num = strtod(tree->contents, NULL);
-    return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal");
+    return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal: %s", tree->contents);
 }
 
 lval *lval_sexpression()
@@ -86,12 +86,27 @@ lval *lval_double(double num)
     return rv;
 }
 
-lval *lval_error(const char *error)
+lval *lval_error(const char *fmt, ...)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_ERROR;
-    rv->value.error = error;
-    return rv;
+    lval *v = malloc(sizeof(lval));
+    v->type = LVAL_ERROR;
+
+    // Create a va list and initialize it
+    va_list va;
+    va_start(va, fmt);
+
+    // Allocate 512 bytes of space
+    v->value.error = malloc(512);
+
+    // printf the error string with a maximum of 511 characters
+    vsnprintf(v->value.error, 511, fmt, va);
+
+    // Reallocate to number of bytes actually used
+    v->value.error = realloc(v->value.error, strlen(v->value.error) + 1);
+
+    // Cleanup our va list
+    va_end(va);
+    return v;
 }
 
 lval *lval_qexpression()
@@ -198,8 +213,10 @@ void lval_del(lval *v)
     {
     case LVAL_LONG:
     case LVAL_DOUBLE:
-    case LVAL_ERROR:
     case LVAL_FUN:
+        break;
+    case LVAL_ERROR:
+        free(v->value.error);
         break;
     case LVAL_SYMBOL:
         free(v->value.symbol);
@@ -253,4 +270,25 @@ lval *lval_copy(lval *v)
     }
 
     return rv;
+}
+
+char *ltype_name(int type)
+{
+    switch(type)
+    {
+        case LVAL_FUN:
+            return "Function";
+        case LVAL_LONG:
+            return "Number";
+        case LVAL_ERROR:
+            return "Error";
+        case LVAL_SYMBOL:
+            return "Symbol";
+        case LVAL_SEXPRESSION:
+            return "S-Expression";
+        case LVAL_QEXPRESSION:
+            return "Q-Expression";
+        default:
+            return "Unknown";
+    }
 }

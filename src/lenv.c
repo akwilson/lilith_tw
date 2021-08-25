@@ -45,7 +45,7 @@ lval *lenv_get(lenv *e, lval *k)
         }
     }
 
-    return lval_error("unbound symbol");
+    return lval_error("unbound symbol '%s'", k->value.symbol);
 }
 
 void lenv_put(lenv *e, lval *k, lval *v)

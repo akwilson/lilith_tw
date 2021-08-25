@@ -33,7 +33,7 @@ struct lval
     {
         long num_l;
         double num_d;
-        const char *error;
+        char *error;
         char *symbol;
         struct
         {
@@ -73,7 +73,7 @@ lval *lval_double(double num);
 /**
  * Generates a new lval with an error message.
  */
-lval *lval_error(const char *error);
+lval *lval_error(const char *fmt, ...);
 
 /**
  * Generates a new lval for a q-expression. The returned value
@@ -135,6 +135,11 @@ void lenv_put(lenv *e, lval *k, lval *v);
  * Add built-in functions to the environment.
  */
 void lenv_add_builtins(lenv *e);
+
+/**
+ * Convert a type in to a user-friendly name.
+ */
+char *ltype_name(int type);
 
 /**
  * Evaluates an lval expression.
