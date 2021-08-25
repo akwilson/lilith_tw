@@ -98,17 +98,13 @@ lval *lenv_get(lenv *e, lval *k)
 
 bool lenv_put_builtin(lenv *e, lval *k, lval *v)
 {
-    env_entry ee;
-    ee.is_builtin = true;
-    ee.value = v;
+    env_entry ee = { true, v };
     return lenv_put_internal(e, k, ee);
 }
 
 bool lenv_put(lenv *e, lval *k, lval *v)
 {
-    env_entry ee;
-    ee.is_builtin = false;
-    ee.value = v;
+    env_entry ee = { false, v };
     return lenv_put_internal(e, k, ee);
 }
 
