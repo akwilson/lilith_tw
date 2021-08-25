@@ -6,12 +6,59 @@
 #include <stdlib.h>
 #include "lilith_int.h"
 
+typedef struct env_entry
+{
+    bool is_builtin;
+    lval *value;
+} env_entry;
+
 struct lenv
 {
     int count;
     char **symbols;
-    lval **values;
+    env_entry **values;
 };
+
+static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
+{
+    // Iterate over all items in environment
+    // This is to see if variable already exists
+    for (int i = 0; i < e->count; i++)
+    {
+        // If variable is found delete item at that position
+        // And replace with variable supplied by user
+        if (strcmp(e->symbols[i], k->value.symbol) == 0)
+        {
+            if (e->values[i]->is_builtin)
+            {
+                return true;
+            }
+
+            lval_del(e->values[i]->value);
+            free(e->values[i]);
+            env_entry *v = malloc(sizeof(env_entry));
+            v->is_builtin = ee.is_builtin;
+            v->value = lval_copy(ee.value);
+            e->values[i] = v;
+            return false;
+        }
+    }
+
+    // If no existing entry found allocate space for new entry
+    e->count++;
+    e->values = realloc(e->values, sizeof(env_entry*) * e->count);
+    e->symbols = realloc(e->symbols, sizeof(char*) * e->count);
+
+    // Copy contents of lval and symbol string into new location
+    env_entry *v = malloc(sizeof(env_entry));
+    v->is_builtin = ee.is_builtin;
+    v->value = lval_copy(ee.value);
+    e->values[e->count - 1] = v;
+    
+    e->symbols[e->count - 1] = malloc(strlen(k->value.symbol) + 1);
+    strcpy(e->symbols[e->count - 1], k->value.symbol);
+    return false;
+}
 
 lenv *lenv_new()
 {
@@ -27,7 +74,8 @@ void lenv_del(lenv *e)
     for (int i = 0; i < e->count; i++)
     {
         free(e->symbols[i]);
-        lval_del(e->values[i]);
+        lval_del(e->values[i]->value);
+        free(e->values[i]);
     }
 
     free(e->symbols);
@@ -41,38 +89,27 @@ lval *lenv_get(lenv *e, lval *k)
     {
         if (strcmp(e->symbols[i], k->value.symbol) == 0)
         {
-            return lval_copy(e->values[i]);
+            return lval_copy(e->values[i]->value);
         }
     }
 
     return lval_error("unbound symbol '%s'", k->value.symbol);
 }
 
-void lenv_put(lenv *e, lval *k, lval *v)
+bool lenv_put_builtin(lenv *e, lval *k, lval *v)
 {
-    // Iterate over all items in environment
-    // This is to see if variable already exists
-    for (int i = 0; i < e->count; i++)
-    {
-        // If variable is found delete item at that position
-        // And replace with variable supplied by user
-        if (strcmp(e->symbols[i], k->value.symbol) == 0)
-        {
-            lval_del(e->values[i]);
-            e->values[i] = lval_copy(v);
-            return;
-        }
-    }
+    env_entry ee;
+    ee.is_builtin = true;
+    ee.value = v;
+    return lenv_put_internal(e, k, ee);
+}
 
-    // If no existing entry found allocate space for new entry
-    e->count++;
-    e->values = realloc(e->values, sizeof(lval*) * e->count);
-    e->symbols = realloc(e->symbols, sizeof(char*) * e->count);
-
-    // Copy contents of lval and symbol string into new location
-    e->values[e->count - 1] = lval_copy(v);
-    e->symbols[e->count - 1] = malloc(strlen(k->value.symbol) + 1);
-    strcpy(e->symbols[e->count - 1], k->value.symbol);
+bool lenv_put(lenv *e, lval *k, lval *v)
+{
+    env_entry ee;
+    ee.is_builtin = false;
+    ee.value = v;
+    return lenv_put_internal(e, k, ee);
 }
 
 void lenv_print(lenv *e)
@@ -80,7 +117,7 @@ void lenv_print(lenv *e)
     for (int i = 0; i < e->count; i++)
     {
         printf("%s : ", e->symbols[i]);
-        lval_print(e->values[i]);
+        lval_print(e->values[i]->value);
         putchar('\n');
     }
 }

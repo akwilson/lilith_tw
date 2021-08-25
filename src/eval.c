@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 #include "mpc.h"
 #include "lilith_int.h"
@@ -349,7 +348,8 @@ static lval *builtin_def(lenv *env, const char *symbol, lval *val)
     // Assign symbols to values
     for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
     {
-        lenv_put(env, LVAL_EXPR_ITEM(syms, i), LVAL_EXPR_ITEM(val, i + 1));
+        LASSERT(val, !lenv_put(env, LVAL_EXPR_ITEM(syms, i), LVAL_EXPR_ITEM(val, i + 1)),
+            "function '%s' is a built-in", LVAL_EXPR_ITEM(syms, i)->value.symbol);
     }
 
     lval_del(val);
@@ -369,7 +369,8 @@ static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
 {
     lval *k = lval_symbol(name);
     lval *v = lval_fun(name, func);
-    lenv_put(env, k, v);
+
+    lenv_put_builtin(env, k, v);
     lval_del(k);
     lval_del(v);
 }

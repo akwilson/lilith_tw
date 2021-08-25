@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include "mpc.h"
 
 struct lval;
@@ -133,9 +134,14 @@ void lenv_del(lenv *e);
 lval *lenv_get(lenv *e, lval *k);
 
 /**
+ * Adds a built-in symbol to the environment. Replaces it if already present.
+ */
+bool lenv_put_builtin(lenv *e, lval *k, lval *v);
+
+/**
  * Adds a symbol to the environment. Replaces it if already present.
  */
-void lenv_put(lenv *e, lval *k, lval *v);
+bool lenv_put(lenv *e, lval *k, lval *v);
 
 /**
  * Add built-in functions to the environment.
