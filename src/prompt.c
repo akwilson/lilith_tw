@@ -64,15 +64,23 @@ int main(int argc, char *argv[])
     lenv_add_builtins(env);
 
     printf("Lilith Lisp v0.0.1\n");
-    printf("Ctrl+C to exit\n\n");
+    printf("Ctrl+C or 'exit' to exit\n\n");
 
     while (1)
     {
         char *input = readline("lilith> ");
         add_history(input);
-
         mpc_result_t parse_result;
-        if (mpc_parse("<stdin>", input, lilith, &parse_result))
+
+        if (strcmp(input, "exit") == 0)
+        {
+            break;
+        }
+        else if (strcmp(input, "env") == 0)
+        {
+            lenv_print(env);
+        }
+        else if (mpc_parse("<stdin>", input, lilith, &parse_result))
         {
             if (ast_print)
             {

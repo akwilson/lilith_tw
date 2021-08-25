@@ -192,7 +192,7 @@ void lval_print(const lval *v)
         printf("Error: %s", v->value.error);
         break;
     case LVAL_FUN:
-        printf("<function>");
+        printf("<%s>", v->value.fhandle.symbol);
         break;
     case LVAL_SEXPRESSION:
         lval_expr_print(v, '(', ')');

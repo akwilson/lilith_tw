@@ -74,3 +74,13 @@ void lenv_put(lenv *e, lval *k, lval *v)
     e->symbols[e->count - 1] = malloc(strlen(k->value.symbol) + 1);
     strcpy(e->symbols[e->count - 1], k->value.symbol);
 }
+
+void lenv_print(lenv *e)
+{
+    for (int i = 0; i < e->count; i++)
+    {
+        printf("%s : ", e->symbols[i]);
+        lval_print(e->values[i]);
+        putchar('\n');
+    }
+}

@@ -143,6 +143,11 @@ void lenv_put(lenv *e, lval *k, lval *v);
 void lenv_add_builtins(lenv *e);
 
 /**
+ * Print the environment.
+ */
+void lenv_print(lenv *e);
+
+/**
  * Convert a type in to a user-friendly name.
  */
 char *ltype_name(int type);
