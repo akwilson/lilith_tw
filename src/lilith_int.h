@@ -8,7 +8,7 @@ struct lenv;
 typedef struct lval lval;
 typedef struct lenv lenv;
 
-typedef lval*(*lbuiltin)(lenv*, const char*, lval*);
+typedef lval*(*lbuiltin)(lenv*, lval*);
 
 /**
  * Lisp Value types.
@@ -19,16 +19,11 @@ enum
     LVAL_LONG,
     LVAL_DOUBLE,
     LVAL_SYMBOL,
-    LVAL_FUN,
+    LVAL_BUILTIN_FUN,
     LVAL_SEXPRESSION,
-    LVAL_QEXPRESSION
+    LVAL_QEXPRESSION,
+    LVAL_USER_FUN
 };
-
-typedef struct fun_handle
-{
-    char *symbol;
-    lbuiltin fun;
-} fun_handle;
 
 /**
  * Lisp Value -- a node in an expression.
@@ -42,12 +37,22 @@ struct lval
         double num_d;
         char *error;
         char *symbol;
+
+        // s-expressions or q-expressions
         struct
         {
             int count;
-            struct lval **cell;
+            lval **cell;
         } list;
-        fun_handle fhandle;
+
+        // functions
+        lbuiltin builtin;
+        struct
+        {
+            lenv *env;
+            lval *formals;
+            lval *body;
+        } user_fun;
     } value;
 };
 
@@ -65,7 +70,7 @@ lval *lval_symbol(char *symbol);
 /**
  * Generates a new lval for a function call.
  */
-lval *lval_fun(const char *symbol, lbuiltin function);
+lval *lval_fun(lbuiltin function);
 
 /**
  * Generates a new lval for a long integer.
@@ -87,6 +92,11 @@ lval *lval_error(const char *fmt, ...);
  * contains no data and represents the start of an lval hierarchy.
  */
 lval *lval_qexpression();
+
+/**
+ * Generates a new lval for a lambda expression.
+ */
+lval *lval_lambda(lval *formals, lval* body);
 
 /**
  * Adds an lval to an s-expression.
@@ -124,6 +134,11 @@ lval *lval_copy(lval *v);
 lenv *lenv_new(void);
 
 /**
+ * Sets an environment's parens.
+ */
+void lenv_set_parent(lenv *env, lenv *parent);
+
+/**
  * Frees up an lenv.
  */
 void lenv_del(lenv *e);
@@ -144,6 +159,11 @@ bool lenv_put_builtin(lenv *e, lval *k, lval *v);
 bool lenv_put(lenv *e, lval *k, lval *v);
 
 /**
+ * Adds a symbol to the top-most environment. Replaces it if already present.
+ */
+bool lenv_def(lenv *e, lval *k, lval *v);
+
+/**
  * Add built-in functions to the environment.
  */
 void lenv_add_builtins(lenv *e);
@@ -152,6 +172,11 @@ void lenv_add_builtins(lenv *e);
  * Print the environment.
  */
 void lenv_print(lenv *e);
+
+/**
+ * Performs a deep copy of the environment.
+ */
+lenv *lenv_copy(lenv *e);
 
 /**
  * Convert a type in to a user-friendly name.

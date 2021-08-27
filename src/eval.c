@@ -36,12 +36,24 @@
 #define LVAL_EXPR_LST(arg) arg->value.list.cell
 #define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
 
+#define BUILTIN_SYM_DEF "def"
+#define BUILTIN_SYM_LIST "list"
+#define BUILTIN_SYM_HEAD "head"
+#define BUILTIN_SYM_TAIL "tail"
+#define BUILTIN_SYM_EVAL "eval"
+#define BUILTIN_SYM_JOIN "join"
+#define BUILTIN_SYM_LEN "len"
+#define BUILTIN_SYM_CONS "cons"
+#define BUILTIN_SYM_INIT "init"
+#define BUILTIN_SYM_LAMBDA "\\"
+#define BUILTIN_SYM_PUT "="
+
 /*
  * A macro defining the available operations. The first argument is the goto label; the second the name
  * of the function when both params are longs; the third the function for doubles.
  */
-#define IOPS $(SUB, sub_l, sub_d) $(MUL, mul_l, mul_d) $(DIV, div_l, div_d) $(ADD, add_l, add_d) \
-    $(POW, pow_l, pow_d) $(MAX, max_l, max_d) $(MIN, min_l, min_d) $(MOD, mod_l, mod_d)
+#define IOPS $(SUB, sub_l, sub_d, "-") $(MUL, mul_l, mul_d, "*") $(DIV, div_l, div_d, "/") $(ADD, add_l, add_d, "+") \
+    $(POW, pow_l, pow_d, "^") $(MAX, max_l, max_d, "max") $(MIN, min_l, min_d, "min") $(MOD, mod_l, mod_d, "%")
 
 // Arithmetic operations
 static lval *add_l(long x, long y) { return lval_long(x + y); }
@@ -66,7 +78,7 @@ static lval *pow_d(double x, double y) { return lval_double(pow(x, y)); }
  */
 enum iops_enum
 {
-#define $(X, LOP, DOP) IOPSENUM_##X,
+#define $(X, LOP, DOP, SYM) IOPSENUM_##X,
     IOPS
 #undef $
 };
@@ -84,14 +96,14 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
     lval *rv;
     static void *jump_table[] =
     {
-#define $(X, LOP, DOP) &&JT_##X,
+#define $(X, LOP, DOP, SYM) &&JT_##X,
         IOPS
 #undef $
     };
 
     goto *(jump_table[iop]);
 
-#define $(X, LOP, DOP) JT_##X:                              \
+#define $(X, LOP, DOP, SYM) JT_##X:                              \
     if (xval->type == LVAL_LONG && yval->type == LVAL_LONG) \
     {                                                       \
         rv = LOP(xval->value.num_l, yval->value.num_l);     \
@@ -141,12 +153,12 @@ static lval *lval_take(lval *val, int i)
 /**
  * Built-in function to return the first element of a q-expression.
  */
-static lval *builtin_head(lenv *env, const char *symbol, lval *val)
+static lval *builtin_head(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 1, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
-    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_HEAD);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_HEAD);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_HEAD);
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_HEAD);
 
     lval *rv = lval_take(val, 0);
     while (rv->value.list.count > 1)
@@ -160,12 +172,12 @@ static lval *builtin_head(lenv *env, const char *symbol, lval *val)
 /**
  * Built-in function to return all elements of a q-expression except the first.
  */
-static lval *builtin_tail(lenv *env, const char *symbol, lval *val)
+static lval *builtin_tail(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 1, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
-    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_TAIL);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_TAIL);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_TAIL);
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_TAIL);
 
     lval *rv = lval_take(val, 0);
     lval_del(lval_pop(rv, 0));
@@ -175,11 +187,11 @@ static lval *builtin_tail(lenv *env, const char *symbol, lval *val)
 /**
  * Built-in function to evaluate a q-expression.
  */
-static lval *builtin_eval(lenv* env, const char *symbol, lval *val)
+static lval *builtin_eval(lenv* env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 1, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_EVAL);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_EVAL);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_EVAL);
 
     lval *x = lval_take(val, 0);
     x->type = LVAL_SEXPRESSION;
@@ -189,9 +201,9 @@ static lval *builtin_eval(lenv* env, const char *symbol, lval *val)
 /**
  * Built-in function to convert an s-expression in to a q-expression.
  */
-static lval *builtin_list(lenv *env, const char *symbol, lval *val)
+static lval *builtin_list(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_LIST);
     val->type = LVAL_QEXPRESSION;
     return val;
 }
@@ -213,13 +225,13 @@ static lval *lval_join(lval *x, lval* y)
 /**
  * Built-in function to join q-expressions together.
  */
-static lval *builtin_join(lenv *env, const char *symbol, lval *val)
+static lval *builtin_join(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_JOIN);
 
     for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        LASSERT_TYPE_ARG(val, i, LVAL_QEXPRESSION, symbol);
+        LASSERT_TYPE_ARG(val, i, LVAL_QEXPRESSION, BUILTIN_SYM_JOIN);
     }
 
     lval *x = lval_pop(val, 0);
@@ -235,11 +247,11 @@ static lval *builtin_join(lenv *env, const char *symbol, lval *val)
 /**
  * Built-in function to return the number of items in a q-expression.
  */
-static lval *builtin_len(lenv *env, const char *symbol, lval *val)
+static lval *builtin_len(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 1, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_LEN);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LEN);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_LEN);
 
     lval *x = lval_take(val, 0);
     return lval_long(LVAL_EXPR_CNT(x));
@@ -248,14 +260,15 @@ static lval *builtin_len(lenv *env, const char *symbol, lval *val)
 /**
  * Built-in function to add an element to the start of a q-expression.
  */
-static lval *builtin_cons(lenv *env, const char *symbol, lval *val)
+static lval *builtin_cons(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 2, symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_CONS);
+    LASSERT_NUM_ARGS(val, 2, BUILTIN_SYM_CONS);
     LASSERT(val,
-        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_DOUBLE || LVAL_EXPR_ITEM(val, 0)->type == LVAL_FUN,
-        "first '%s' parameter should be a value or a function", symbol);
-    LASSERT(val, LVAL_EXPR_ITEM(val, 1)->type == LVAL_QEXPRESSION, "second '%s' parameter should be a q-expression", symbol);
+        LVAL_EXPR_ITEM(val, 0)->type == LVAL_LONG || LVAL_EXPR_ITEM(val, 0)->type == LVAL_DOUBLE ||
+            LVAL_EXPR_ITEM(val, 0)->type == LVAL_BUILTIN_FUN || LVAL_EXPR_ITEM(val, 0)->type == LVAL_USER_FUN,
+        "first '%s' parameter should be a value or a function", BUILTIN_SYM_CONS);
+    LASSERT(val, LVAL_EXPR_ITEM(val, 1)->type == LVAL_QEXPRESSION, "second '%s' parameter should be a q-expression", BUILTIN_SYM_CONS);
 
     lval *rv = lval_qexpression();
     rv = lval_add(rv, lval_pop(val, 0));
@@ -271,19 +284,96 @@ static lval *builtin_cons(lenv *env, const char *symbol, lval *val)
 /**
  * Built-in function to return all elements in a q-expression except the first.
  */
-static lval *builtin_init(lenv *env, const char *symbol, lval *val)
+static lval *builtin_init(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_NUM_ARGS(val, 1, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
-    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", symbol);
+    LASSERT_ENV(val, env, BUILTIN_SYM_INIT);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_INIT);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_INIT);
+    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_INIT);
 
     lval *rv = lval_take(val, 0);
     lval_del(lval_pop(rv, LVAL_EXPR_CNT(rv) - 1));
     return rv;
 }
 
-static lval *builtin_op(lenv *env, const char *symbol, lval *a, enum iops_enum iop)
+/**
+ * Built-in function for defining new symbols. First argument in val's list
+ * is a q-expression with one or more symbols. Additional arguments are values
+ * that map to those symbols.
+ * 
+ * @param env       the environment to add to
+ * @param val       q-expression in the first element, symbols in the subsequent elements
+ * @param to_parent if true assign to the parent environment
+ * @returns         an empty s-expression on success, an error otherwise
+ */
+static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lval*))
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_DEF);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_DEF);
+
+    // First argument is a symbol list
+    lval *syms = LVAL_EXPR_ITEM(val, 0);
+    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
+    {
+        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL,
+            "function '%s' type mismatch - expected %s, received %s",
+            BUILTIN_SYM_DEF, ltype_name(LVAL_SYMBOL), ltype_name(LVAL_EXPR_ITEM(syms, i)->type));
+    }
+
+    LASSERT(val, LVAL_EXPR_CNT(syms) == LVAL_EXPR_CNT(val) - 1,
+        "function '%s' argument mismatch - %d symbols, %d values",
+        BUILTIN_SYM_DEF, LVAL_EXPR_CNT(syms), LVAL_EXPR_CNT(val) - 1);
+    
+    // Assign symbols to values
+    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
+    {
+        LASSERT(val, !adder(env, LVAL_EXPR_ITEM(syms, i), LVAL_EXPR_ITEM(val, i + 1)),
+            "function '%s' is a built-in", LVAL_EXPR_ITEM(syms, i)->value.symbol);
+    }
+
+    lval_del(val);
+    return lval_sexpression();
+}
+
+static lval *builtin_def(lenv *env, lval *val)
+{
+    return builtin_assign(env, val, lenv_def);
+}
+
+static lval *builtin_put(lenv *env, lval *val)
+{
+    return builtin_assign(env, val, lenv_put);
+}
+
+/**
+ * Built-in function to check the structure of a lambda
+ * expression and read off the relevant arguments.
+ */
+static lval *builtin_lambda(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_LAMBDA);
+    LASSERT_NUM_ARGS(val, 2, BUILTIN_SYM_LAMBDA);
+    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_LAMBDA);
+    LASSERT_TYPE_ARG(val, 1, LVAL_QEXPRESSION, BUILTIN_SYM_LAMBDA);
+
+    // Check first q-expression contains only symbols
+    lval *syms = LVAL_EXPR_ITEM(val, 0);
+    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
+    {
+        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL,
+            "function '%s' type mismatch - expected %s, received %s",
+            BUILTIN_SYM_LAMBDA, ltype_name(LVAL_SYMBOL), ltype_name(LVAL_EXPR_ITEM(syms, i)->type));
+    }
+
+    // Pop first two arguments and pass them to lval_lambda
+    lval *formals = lval_pop(val, 0);
+    lval *body = lval_pop(val, 0);
+    lval_del(val);
+
+    return lval_lambda(formals, body);
+}
+
+static lval *builtin_op(lenv *env, lval *a, const char* symbol, enum iops_enum iop)
 {
     LASSERT_ENV(a, env, symbol);
 
@@ -322,57 +412,81 @@ static lval *builtin_op(lenv *env, const char *symbol, lval *a, enum iops_enum i
     return x;
 }
 
-/**
- * Built-in function for defining new symbols. First argument in val's list
- * is a q-expression with one or more symbols. Additional arguments are values
- * that map to those symbols.
- */
-static lval *builtin_def(lenv *env, const char *symbol, lval *val)
-{
-    LASSERT_ENV(val, env, symbol);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, symbol);
-
-    // First argument is a symbol list
-    lval *syms = LVAL_EXPR_ITEM(val, 0);
-    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
-    {
-        LASSERT(val, LVAL_EXPR_ITEM(syms, i)->type == LVAL_SYMBOL,
-            "function '%s' type mismatch - expected %s, received %s",
-            symbol, ltype_name(LVAL_SYMBOL), ltype_name(LVAL_EXPR_ITEM(syms, i)->type));
-    }
-
-    LASSERT(val, LVAL_EXPR_CNT(syms) == LVAL_EXPR_CNT(val) - 1,
-        "function '%s' argument mismatch - %d symbols, %d values",
-        symbol, LVAL_EXPR_CNT(syms), LVAL_EXPR_CNT(val) - 1);
-    
-    // Assign symbols to values
-    for (int i = 0; i < LVAL_EXPR_CNT(syms); i++)
-    {
-        LASSERT(val, !lenv_put(env, LVAL_EXPR_ITEM(syms, i), LVAL_EXPR_ITEM(val, i + 1)),
-            "function '%s' is a built-in", LVAL_EXPR_ITEM(syms, i)->value.symbol);
-    }
-
-    lval_del(val);
-    return lval_sexpression();
-}
-
-static lval *builtin_add(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_ADD); }
-static lval *builtin_sub(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_SUB); }
-static lval *builtin_div(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_DIV); }
-static lval *builtin_mul(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_MUL); }
-static lval *builtin_min(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_MIN); }
-static lval *builtin_max(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_MAX); }
-static lval *builtin_pow(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_POW); }
-static lval *builtin_mod(lenv *env, const char *symbol, lval *val) { return builtin_op(env, symbol, val, IOPSENUM_MOD); }
+// Create functions to call builtin_op() for the supported arithmetic operators
+#define $(X, LOP, DOP, SYM) static lval *builtin_##X(lenv *env, lval *val) { return builtin_op(env, val, SYM, IOPSENUM_##X); }
+    IOPS
+#undef $
 
 static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
 {
     lval *k = lval_symbol(name);
-    lval *v = lval_fun(name, func);
+    lval *v = lval_fun(func);
 
     lenv_put_builtin(env, k, v);
     lval_del(k);
     lval_del(v);
+}
+
+/**
+ * Calls a function. Binds each parameter to its environment and evaluates
+ * the function with that environment. If too few arguments are passed it
+ * returns a new, partially evaluated function.
+ * 
+ * @param env  the top-level environment
+ * @param func the function to call
+ * @param args the arguments to pass to the function
+ * @returns    a result, or a partially evaluated function
+ */
+static lval *lval_call(lenv *env, lval *func, lval *args)
+{
+    if (func->type == LVAL_BUILTIN_FUN)
+    {
+        return func->value.builtin(env, args);
+    }
+
+    // Argument counts
+    int given = LVAL_EXPR_CNT(args);
+    int expected = LVAL_EXPR_CNT(func->value.user_fun.formals);
+
+    // Bind the parameters to the formal symbols
+    while (LVAL_EXPR_CNT(args))
+    {
+        if (LVAL_EXPR_CNT(func->value.user_fun.formals) == 0)
+        {
+            lval_del(args);
+            return lval_error("Too many aruments passed to function - expected %d, received %d",
+                    expected, given);
+        }
+
+        // Consume arguments -- bind argument to formal
+        lval *sym = lval_pop(func->value.user_fun.formals, 0);
+        lval *param = lval_pop(args, 0);
+
+        // TODO: what if user attempts to bind a built-in?
+        lenv_put(func->value.user_fun.env, sym, param);
+
+        lval_del(sym);
+        lval_del(param);
+    }
+
+    // Argument list os bound so can be cleaned up
+    lval_del(args);
+
+    if (LVAL_EXPR_CNT(func->value.user_fun.formals) == 0)
+    {
+        // All arguments are bound so call function
+        lenv_set_parent(func->value.user_fun.env, env);
+        return builtin_eval(func->value.user_fun.env,
+                            lval_add(lval_sexpression(),
+                            lval_copy(func->value.user_fun.body)));
+    }
+
+    /*
+     * Return the partially evaluated function. At this stage all of the passed-in params
+     * have been bound to the function's local environment and the corresponding formals
+     * have been removed.
+     */
+    return lval_copy(func);
 }
 
 static lval *lval_eval_sexpr(lenv *env, lval *val)
@@ -406,7 +520,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
 
     // First element must be a function
     lval *first = lval_pop(val, 0);
-    if (first->type != LVAL_FUN)
+    if (first->type != LVAL_BUILTIN_FUN && first->type != LVAL_USER_FUN)
     {
         lval_del(first);
         lval_del(val);
@@ -414,7 +528,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     }
 
     // Call function
-    lval *result = first->value.fhandle.fun(env, first->value.fhandle.symbol, val);
+    lval *result = lval_call(env, first, val);
     lval_del(first);
     return result;
 }
@@ -441,22 +555,19 @@ lval *lval_eval(lenv *env, lval *val)
 
 void lenv_add_builtins(lenv *e)
 {
-    lenv_add_builtin(e, "+", builtin_add);
-    lenv_add_builtin(e, "-", builtin_sub);
-    lenv_add_builtin(e, "*", builtin_mul);
-    lenv_add_builtin(e, "/", builtin_div);
-    lenv_add_builtin(e, "min", builtin_min);
-    lenv_add_builtin(e, "max", builtin_max);
-    lenv_add_builtin(e, "^", builtin_pow);
-    lenv_add_builtin(e, "%", builtin_mod);
+#define $(X, LOP, DOP, SYM) lenv_add_builtin(e, SYM, builtin_##X);
+    IOPS
+#undef $
 
-    lenv_add_builtin(e, "def", builtin_def);
-    lenv_add_builtin(e, "list", builtin_list);
-    lenv_add_builtin(e, "head", builtin_head);
-    lenv_add_builtin(e, "tail", builtin_tail);
-    lenv_add_builtin(e, "eval", builtin_eval);
-    lenv_add_builtin(e, "join", builtin_join);
-    lenv_add_builtin(e, "len", builtin_len);
-    lenv_add_builtin(e, "cons", builtin_cons);
-    lenv_add_builtin(e, "init", builtin_init);
+    lenv_add_builtin(e, BUILTIN_SYM_DEF, builtin_def);
+    lenv_add_builtin(e, BUILTIN_SYM_PUT, builtin_put);
+    lenv_add_builtin(e, BUILTIN_SYM_LIST, builtin_list);
+    lenv_add_builtin(e, BUILTIN_SYM_HEAD, builtin_head);
+    lenv_add_builtin(e, BUILTIN_SYM_TAIL, builtin_tail);
+    lenv_add_builtin(e, BUILTIN_SYM_EVAL, builtin_eval);
+    lenv_add_builtin(e, BUILTIN_SYM_JOIN, builtin_join);
+    lenv_add_builtin(e, BUILTIN_SYM_LEN, builtin_len);
+    lenv_add_builtin(e, BUILTIN_SYM_CONS, builtin_cons);
+    lenv_add_builtin(e, BUILTIN_SYM_INIT, builtin_init);
+    lenv_add_builtin(e, BUILTIN_SYM_LAMBDA, builtin_lambda);
 }

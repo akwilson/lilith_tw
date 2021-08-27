@@ -14,6 +14,7 @@ typedef struct env_entry
 
 struct lenv
 {
+    lenv *parent;
     int count;
     char **symbols;
     env_entry **values;
@@ -63,10 +64,16 @@ static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
 lenv *lenv_new()
 {
     lenv *rv = malloc(sizeof(lenv));
+    rv->parent = 0;
     rv->count = 0;
     rv->symbols = 0;
     rv->values = 0;
     return rv;
+}
+
+void lenv_set_parent(lenv *env, lenv *parent)
+{
+    env->parent = parent;
 }
 
 void lenv_del(lenv *e)
@@ -93,6 +100,11 @@ lval *lenv_get(lenv *e, lval *k)
         }
     }
 
+    if (e->parent)
+    {
+        return lenv_get(e->parent, k);
+    }
+
     return lval_error("unbound symbol '%s'", k->value.symbol);
 }
 
@@ -108,6 +120,16 @@ bool lenv_put(lenv *e, lval *k, lval *v)
     return lenv_put_internal(e, k, ee);
 }
 
+bool lenv_def(lenv *e, lval *k, lval *v)
+{
+    while (e->parent)
+    {
+        e = e->parent;
+    }
+
+    return lenv_put(e, k, v);
+}
+
 void lenv_print(lenv *e)
 {
     for (int i = 0; i < e->count; i++)
@@ -116,4 +138,26 @@ void lenv_print(lenv *e)
         lval_print(e->values[i]->value);
         putchar('\n');
     }
+}
+
+lenv *lenv_copy(lenv *e)
+{
+    lenv *rv = malloc(sizeof(lenv));
+    rv->parent = e->parent;
+    rv->count = e->count;
+    rv->symbols = malloc(sizeof(char*) * rv->count);
+    rv->values = malloc(sizeof(env_entry*) * rv->count);
+
+    for (int i = 0; i < rv->count; i++)
+    {
+        rv->symbols[i] = malloc(strlen(e->symbols[i]) + 1);
+        strcpy(rv->symbols[i], e->symbols[i]);
+
+        env_entry *ee = malloc(sizeof(env_entry));
+        ee->is_builtin = e->values[i]->is_builtin;
+        ee->value = lval_copy(e->values[i]->value);
+        rv->values[i] = ee;
+    }
+
+    return rv; 
 }

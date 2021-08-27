@@ -62,13 +62,11 @@ lval *lval_symbol(char *symbol)
     return rv;
 }
 
-lval *lval_fun(const char *symbol, lbuiltin function)
+lval *lval_fun(lbuiltin function)
 {
     lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_FUN;
-    rv->value.fhandle.symbol = malloc(strlen(symbol) + 1);
-    strcpy(rv->value.fhandle.symbol, symbol);
-    rv->value.fhandle.fun = function;
+    rv->type = LVAL_BUILTIN_FUN;
+    rv->value.builtin = function;
     return rv;
 }
 
@@ -117,6 +115,20 @@ lval *lval_qexpression()
     rv->type = LVAL_QEXPRESSION;
     rv->value.list.count = 0;
     rv->value.list.cell = 0;
+    return rv;
+}
+
+lval *lval_lambda(lval *formals, lval* body)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_USER_FUN;
+
+    // Build new environment
+    rv->value.user_fun.env = lenv_new();
+
+    // Set formals and body
+    rv->value.user_fun.formals = formals;
+    rv->value.user_fun.body = body;
     return rv;
 }
 
@@ -191,14 +203,21 @@ void lval_print(const lval *v)
     case LVAL_ERROR:
         printf("Error: %s", v->value.error);
         break;
-    case LVAL_FUN:
-        printf("<%s>", v->value.fhandle.symbol);
+    case LVAL_BUILTIN_FUN:
+        printf("<builtin>");
         break;
     case LVAL_SEXPRESSION:
         lval_expr_print(v, '(', ')');
         break;
     case LVAL_QEXPRESSION:
         lval_expr_print(v, '{', '}');
+        break;
+    case LVAL_USER_FUN:
+        printf("(\\ ");
+        lval_print(v->value.user_fun.formals);
+        putchar(' ');
+        lval_print(v->value.user_fun.body);
+        putchar(')');
         break;
     }
 }
@@ -215,9 +234,7 @@ void lval_del(lval *v)
     {
     case LVAL_LONG:
     case LVAL_DOUBLE:
-        break;
-    case LVAL_FUN:
-        free(v->value.fhandle.symbol);
+    case LVAL_BUILTIN_FUN:
         break;
     case LVAL_ERROR:
         free(v->value.error);
@@ -233,6 +250,11 @@ void lval_del(lval *v)
         }
 
         free(v->value.list.cell);
+        break;
+    case LVAL_USER_FUN:
+        lenv_del(v->value.user_fun.env);
+        lval_del(v->value.user_fun.formals);
+        lval_del(v->value.user_fun.body);
         break;
     }
 
@@ -252,16 +274,14 @@ lval *lval_copy(lval *v)
     case LVAL_DOUBLE:
         rv->value.num_d = v->value.num_d;
         break;
-    case LVAL_FUN:
-        rv->value.fhandle.fun = v->value.fhandle.fun;
-        rv->value.fhandle.symbol = malloc(strlen(v->value.fhandle.symbol) + 1);
-        strcpy(rv->value.fhandle.symbol, v->value.fhandle.symbol);
+    case LVAL_BUILTIN_FUN:
+        rv->value.builtin = v->value.builtin;
         break;
     case LVAL_ERROR:
         rv->value.error = v->value.error;
         break;
     case LVAL_SYMBOL:
-        rv->value.symbol = malloc(strlen(rv->value.symbol + 1));
+        rv->value.symbol = malloc(strlen(v->value.symbol + 1));
         strcpy(rv->value.symbol, v->value.symbol);
         break;
     case LVAL_QEXPRESSION:
@@ -273,6 +293,11 @@ lval *lval_copy(lval *v)
             rv->value.list.cell[i] = lval_copy(v->value.list.cell[i]);
         }
         break;
+    case LVAL_USER_FUN:
+        rv->value.user_fun.env = lenv_copy(v->value.user_fun.env);
+        rv->value.user_fun.formals = lval_copy(v->value.user_fun.formals);
+        rv->value.user_fun.body = lval_copy(v->value.user_fun.body);
+        break;
     }
 
     return rv;
@@ -282,7 +307,8 @@ char *ltype_name(int type)
 {
     switch(type)
     {
-        case LVAL_FUN:
+        case LVAL_BUILTIN_FUN:
+        case LVAL_USER_FUN:
             return "Function";
         case LVAL_LONG:
             return "Number";
