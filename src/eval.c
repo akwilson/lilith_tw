@@ -460,6 +460,24 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 
         // Consume arguments -- bind argument to formal
         lval *sym = lval_pop(func->value.user_fun.formals, 0);
+
+        // Handle special case & - bind varargs as a q-expression
+        if (strcmp(sym->value.symbol, "&") == 0)
+        {
+            if (LVAL_EXPR_CNT(func->value.user_fun.formals) != 1)
+            {
+                lval_del(args);
+                return lval_error("function format invalid - symbol '&' not followed by single symbol");
+            }
+
+            // Next formal should be bound to remaining arguments
+            lval *nsym = lval_pop(func->value.user_fun.formals, 0);
+            lenv_put(func->value.user_fun.env, nsym, builtin_list(env, args));
+            lval_del(nsym);
+            lval_del(sym);
+            break;
+        }
+
         lval *param = lval_pop(args, 0);
 
         // TODO: what if user attempts to bind a built-in?
@@ -471,6 +489,29 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 
     // Argument list os bound so can be cleaned up
     lval_del(args);
+
+    // If '&' remains in formal list bind to empty list
+    if (LVAL_EXPR_CNT(func->value.user_fun.formals) > 0 &&
+        strcmp(LVAL_EXPR_ITEM(func->value.user_fun.formals, 0)->value.symbol, "&") == 0)
+    {
+        // Check to ensure that & is not passed invalidly
+        if (LVAL_EXPR_CNT(func->value.user_fun.formals) != 2)
+        {
+            return lval_error("function format invalid - symbol '&' not followed by single symbol");
+        }
+
+        // Pop and delete '&' symbol
+        lval_del(lval_pop(func->value.user_fun.formals, 0));
+
+        // Pop next symbol and create empty list
+        lval *sym = lval_pop(func->value.user_fun.formals, 0);
+        lval *val = lval_qexpression();
+
+        // Bind to environment and delete
+        lenv_put(func->value.user_fun.env, sym, val);
+        lval_del(sym);
+        lval_del(val);
+    }
 
     if (LVAL_EXPR_CNT(func->value.user_fun.formals) == 0)
     {
