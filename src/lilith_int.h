@@ -3,6 +3,10 @@
 #include <stdbool.h>
 #include "mpc.h"
 
+#define LVAL_EXPR_CNT(arg) arg->value.list.count
+#define LVAL_EXPR_LST(arg) arg->value.list.cell
+#define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
+
 struct lval;
 struct lenv;
 typedef struct lval lval;
@@ -55,6 +59,16 @@ struct lval
         } user_fun;
     } value;
 };
+
+/**
+ * Removes an item from an lval list.
+ */
+lval *lval_pop(lval *val, int i);
+
+/**
+ * Removes an item from an lval list and deletes everything else.
+ */
+lval *lval_take(lval *val, int i);
 
 /**
  * Generates a new lval for an s-expression. The returned value

@@ -44,6 +44,29 @@ static lval *lval_read_double(const mpc_ast_t *tree)
     return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal: %s", tree->contents);
 }
 
+lval *lval_pop(lval *val, int i)
+{
+    lval *x = LVAL_EXPR_ITEM(val, i);
+
+    // Shift memory after the item at "i" over the top
+    memmove(&LVAL_EXPR_ITEM(val, i), &LVAL_EXPR_ITEM(val, i + 1),
+        sizeof(lval*) * (LVAL_EXPR_CNT(val) - i - 1));
+
+    // Decrease the count of items in the list
+    LVAL_EXPR_CNT(val)--;
+
+    // Reallocate the memory used
+    LVAL_EXPR_LST(val) = realloc(LVAL_EXPR_LST(val), sizeof(lval*) * LVAL_EXPR_CNT(val));
+    return x;
+}
+
+lval *lval_take(lval *val, int i)
+{
+    lval *x = lval_pop(val, i);
+    lval_del(val);
+    return x;
+}
+
 lval *lval_sexpression()
 {
     lval *rv = malloc(sizeof(lval));
