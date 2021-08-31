@@ -267,6 +267,59 @@ void lval_println(const lval *v)
     putchar('\n');
 }
 
+bool lval_is_equal(lval *x, lval *y)
+{
+    if (x->type != y->type)
+    {
+        if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+        {
+            return x->value.num_l == y->value.num_d;
+        }
+        else if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+        {
+            return x->value.num_d == y->value.num_l;
+        }
+
+        return 0;
+    }
+
+    switch (x->type)
+    {
+    case LVAL_LONG:
+        return x->value.num_l == y->value.num_l;
+    case LVAL_DOUBLE:
+        return x->value.num_d == y->value.num_d;
+    case LVAL_BOOL:
+        return x->value.bval == y->value.bval;
+    case LVAL_ERROR:
+        return (strcmp(x->value.error, y->value.error) == 0);
+    case LVAL_SYMBOL:
+        return (strcmp(x->value.symbol, y->value.symbol) == 0);
+    case LVAL_BUILTIN_FUN:
+        return x->value.builtin == y->value.builtin;
+    case LVAL_USER_FUN:
+        return lval_is_equal(x->value.user_fun.formals, y->value.user_fun.formals) &&
+            lval_is_equal(x->value.user_fun.body, y->value.user_fun.body);
+    case LVAL_QEXPRESSION:
+    case LVAL_SEXPRESSION:
+        if (LVAL_EXPR_CNT(x) != LVAL_EXPR_CNT(y))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < LVAL_EXPR_CNT(x); i++)
+        {
+            if (!lval_is_equal(LVAL_EXPR_ITEM(x, i), LVAL_EXPR_ITEM(y, i)))
+            {
+                return 0;
+            }
+        }
+        return true;
+    }
+
+    return false; 
+}
+
 void lval_del(lval *v)
 {
     switch (v->type)

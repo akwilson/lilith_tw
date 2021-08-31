@@ -150,6 +150,11 @@ void lval_del(lval *v);
 lval *lval_copy(lval *v);
 
 /**
+ * Check two lvals for equality.
+ */
+bool lval_is_equal(lval *x, lval *y);
+
+/**
  * Initialises a new instance of lenv;
  */
 lenv *lenv_new(void);

@@ -1,6 +1,5 @@
 /*
- * Functions to evaluate an s-expression. Uses an X macro to generate
- * a computed goto to dispatch the operation.
+ * Functions to evaluate an s-expression.
  */
 
 #include <stdio.h>

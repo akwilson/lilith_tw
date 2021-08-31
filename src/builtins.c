@@ -1,5 +1,6 @@
 /*
- * Built-in functions providing core functionality.
+ * Built-in functions providing core functionality. Uses an X macro to generate
+ * a computed goto to dispatch the operation.
  */
 
 #include <stdio.h>
@@ -38,9 +39,10 @@
  * A macro defining the available operations. The first argument is the goto label; the second the name
  * of the function when both params are longs; the third the function for doubles.
  */
-#define IOPS $(SUB, sub_l, sub_d, "-") $(MUL, mul_l, mul_d, "*") $(DIV, div_l, div_d, "/") $(ADD, add_l, add_d, "+") \
-    $(POW, pow_l, pow_d, "^") $(MAX, max_l, max_d, "max") $(MIN, min_l, min_d, "min") $(MOD, mod_l, mod_d, "%") \
-    $(GT, gt, gt, ">") $(LT, lt, lt, "<") $(GTE, gte, gte, ">=") $(LTE, lte, lte, "<=")
+#define IOPS $(SUB, sub_l, sub_d, "-") $(MUL, mul_l, mul_d, "*") $(DIV, div_l, div_d, "/")      \
+    $(ADD, add_l, add_d, "+") $(POW, pow_l, pow_d, "^") $(MAX, max_l, max_d, "max")             \
+    $(MIN, min_l, min_d, "min") $(MOD, mod_l, mod_d, "%") $(GT, gt, gt, ">") $(LT, lt, lt, "<") \
+    $(GTE, gte, gte, ">=") $(LTE, lte, lte, "<=")
 
 // Arithmetic operations
 static lval *add_l(long x, long y) { return lval_long(x + y); }
@@ -118,59 +120,9 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
 #undef $
 }
 
-static bool is_equal(lval *x, lval *y)
-{
-    if (x->type != y->type)
-    {
-        if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-        {
-            return x->value.num_l == y->value.num_d;
-        }
-        else if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-        {
-            return x->value.num_d == y->value.num_l;
-        }
-
-        return 0;
-    }
-
-    switch (x->type)
-    {
-    case LVAL_LONG:
-        return x->value.num_l == y->value.num_l;
-    case LVAL_DOUBLE:
-        return x->value.num_d == y->value.num_d;
-    case LVAL_BOOL:
-        return x->value.bval == y->value.bval;
-    case LVAL_ERROR:
-        return (strcmp(x->value.error, y->value.error) == 0);
-    case LVAL_SYMBOL:
-        return (strcmp(x->value.symbol, y->value.symbol) == 0);
-    case LVAL_BUILTIN_FUN:
-        return x->value.builtin == y->value.builtin;
-    case LVAL_USER_FUN:
-        return is_equal(x->value.user_fun.formals, y->value.user_fun.formals) &&
-            is_equal(x->value.user_fun.body, y->value.user_fun.body);
-    case LVAL_QEXPRESSION:
-    case LVAL_SEXPRESSION:
-        if (LVAL_EXPR_CNT(x) != LVAL_EXPR_CNT(y))
-        {
-            return false;
-        }
-
-        for (int i = 0; i < LVAL_EXPR_CNT(x); i++)
-        {
-            if (!is_equal(LVAL_EXPR_ITEM(x, i), LVAL_EXPR_ITEM(y, i)))
-            {
-                return 0;
-            }
-        }
-        return true;
-    }
-
-    return false; 
-}
-
+/**
+ * Check two types for equality.
+ */
 static bool type_check(lval *x, lval *y)
 {
     if (x->type == LVAL_LONG || x->type == LVAL_DOUBLE)
@@ -203,7 +155,7 @@ static lval *builtin_eq(lenv *env, lval *val)
     // While elements remain
     while (LVAL_EXPR_CNT(val) > 0)
     {
-        if (!is_equal(x, lval_pop(val, 0)))
+        if (!lval_is_equal(x, lval_pop(val, 0)))
         {
             rv = false;
             break;
@@ -214,6 +166,9 @@ static lval *builtin_eq(lenv *env, lval *val)
     return lval_bool(rv);
 }
 
+/**
+ * Built-in function to 'and' a series of boolean expressions.
+ */
 static lval *builtin_and(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_EQ);
@@ -241,6 +196,9 @@ static lval *builtin_and(lenv *env, lval *val)
     return lval_bool(rv);
 }
 
+/**
+ * Built-in function to 'or' a series of boolean expressions.
+ */
 static lval *builtin_or(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_EQ);
@@ -268,6 +226,9 @@ static lval *builtin_or(lenv *env, lval *val)
     return lval_bool(rv);
 }
 
+/**
+ * Built-in function to flip a boolean expression.
+ */
 static lval *builtin_not(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_NOT);
