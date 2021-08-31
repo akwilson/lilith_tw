@@ -214,6 +214,70 @@ static lval *builtin_eq(lenv *env, lval *val)
     return lval_bool(rv);
 }
 
+static lval *builtin_and(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_EQ);
+
+    // Confirm that all arguments are boolean
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
+    {
+        LASSERT(val, LVAL_EXPR_ITEM(val, i)->type == LVAL_BOOL,
+            "function '%s' type mismatch - expected %s, received %s",
+            BUILTIN_SYM_AND, LVAL_BOOL, ltype_name(LVAL_EXPR_ITEM(val, i)->type));
+    }
+
+    bool rv = true;
+    while (LVAL_EXPR_CNT(val) > 0)
+    {
+        lval *x = lval_pop(val, 0);
+        if (!x->value.bval)
+        {
+            rv = false;
+            break;
+        }
+    }
+
+    lval_del(val);
+    return lval_bool(rv);
+}
+
+static lval *builtin_or(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_EQ);
+
+    // Confirm that all arguments are boolean
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
+    {
+        LASSERT(val, LVAL_EXPR_ITEM(val, i)->type == LVAL_BOOL,
+            "function '%s' type mismatch - expected %s, received %s",
+            BUILTIN_SYM_OR, LVAL_BOOL, ltype_name(LVAL_EXPR_ITEM(val, i)->type));
+    }
+
+    bool rv = false;
+    while (LVAL_EXPR_CNT(val) > 0)
+    {
+        lval *x = lval_pop(val, 0);
+        if (x->value.bval)
+        {
+            rv = true;
+            break;
+        }
+    }
+
+    lval_del(val);
+    return lval_bool(rv);
+}
+
+static lval *builtin_not(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_NOT);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_NOT);
+    LASSERT_TYPE_ARG(val, 0, LVAL_BOOL, BUILTIN_SYM_NOT);
+
+    lval *x = lval_take(val, 0);
+    return lval_bool(!x->value.bval);
+}
+
 /**
  * Built-in function to return the first element of a q-expression.
  */
@@ -549,4 +613,7 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_LAMBDA, builtin_lambda);
     lenv_add_builtin(e, BUILTIN_SYM_IF, builtin_if);
     lenv_add_builtin(e, BUILTIN_SYM_EQ, builtin_eq);
+    lenv_add_builtin(e, BUILTIN_SYM_AND, builtin_and);
+    lenv_add_builtin(e, BUILTIN_SYM_OR, builtin_or);
+    lenv_add_builtin(e, BUILTIN_SYM_NOT, builtin_not);
 }

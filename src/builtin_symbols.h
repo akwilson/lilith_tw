@@ -16,6 +16,9 @@
 #define BUILTIN_SYM_PUT "let"
 #define BUILTIN_SYM_IF "if"
 #define BUILTIN_SYM_EQ "="
+#define BUILTIN_SYM_AND "and"
+#define BUILTIN_SYM_OR "or"
+#define BUILTIN_SYM_NOT "not"
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.
