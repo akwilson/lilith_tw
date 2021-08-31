@@ -109,6 +109,14 @@ lval *lval_double(double num)
     return rv;
 }
 
+lval *lval_bool(bool bval)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_BOOL;
+    rv->value.bval = bval;
+    return rv;
+}
+
 lval *lval_error(const char *fmt, ...)
 {
     lval *v = malloc(sizeof(lval));
@@ -176,6 +184,11 @@ lval *lval_read(const mpc_ast_t *tree)
         return lval_read_double(tree);
     }
 
+    if (strstr(tree->tag, "boolean"))
+    {
+        return lval_bool(tree->contents[1] == 't');
+    }
+
     if (strstr(tree->tag, "symbol"))
     {
         return lval_symbol(tree->contents);
@@ -220,6 +233,9 @@ void lval_print(const lval *v)
     case LVAL_DOUBLE:
         printf("%f", v->value.num_d);
         break;
+    case LVAL_BOOL:
+        printf("%s", v->value.bval ? "#t" : "#f");
+        break;
     case LVAL_SYMBOL:
         printf("%s", v->value.symbol);
         break;
@@ -258,6 +274,7 @@ void lval_del(lval *v)
     case LVAL_LONG:
     case LVAL_DOUBLE:
     case LVAL_BUILTIN_FUN:
+    case LVAL_BOOL:
         break;
     case LVAL_ERROR:
         free(v->value.error);
@@ -297,6 +314,9 @@ lval *lval_copy(lval *v)
     case LVAL_DOUBLE:
         rv->value.num_d = v->value.num_d;
         break;
+    case LVAL_BOOL:
+        rv->value.bval = v->value.bval;
+        break;
     case LVAL_BUILTIN_FUN:
         rv->value.builtin = v->value.builtin;
         break;
@@ -335,6 +355,10 @@ char *ltype_name(int type)
             return "Function";
         case LVAL_LONG:
             return "Number";
+        case LVAL_DOUBLE:
+            return "Decimal";
+        case LVAL_BOOL:
+            return "Boolean";
         case LVAL_ERROR:
             return "Error";
         case LVAL_SYMBOL:

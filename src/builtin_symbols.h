@@ -13,7 +13,9 @@
 #define BUILTIN_SYM_CONS "cons"
 #define BUILTIN_SYM_INIT "init"
 #define BUILTIN_SYM_LAMBDA "\\"
-#define BUILTIN_SYM_PUT "="
+#define BUILTIN_SYM_PUT "let"
+#define BUILTIN_SYM_IF "if"
+#define BUILTIN_SYM_EQ "="
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

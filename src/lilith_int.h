@@ -22,6 +22,7 @@ enum
     LVAL_ERROR,
     LVAL_LONG,
     LVAL_DOUBLE,
+    LVAL_BOOL,
     LVAL_SYMBOL,
     LVAL_BUILTIN_FUN,
     LVAL_SEXPRESSION,
@@ -39,6 +40,7 @@ struct lval
     {
         long num_l;
         double num_d;
+        bool bval;
         char *error;
         char *symbol;
 
@@ -95,6 +97,11 @@ lval *lval_long(long num);
  * Generates a new lval for a double.
  */
 lval *lval_double(double num);
+
+/**
+ * Generates a nw lval for a boolean.
+ */
+lval *lval_bool(bool bval);
 
 /**
  * Generates a new lval with an error message.
