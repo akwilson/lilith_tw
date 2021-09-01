@@ -11,7 +11,7 @@ static void lval_expr_print(const lval *v, char open, char close)
     putchar(open);
     for (int i = 0; i < v->value.list.count; i++)
     {
-        // Print Value contained within
+        // Print value contained within
         lval_print(v->value.list.cell[i]);
 
         // Don't print trailing space if last element
@@ -22,6 +22,15 @@ static void lval_expr_print(const lval *v, char open, char close)
     }
 
     putchar(close);
+}
+
+static void lval_print_string(const lval *str_val)
+{
+    char *escaped = malloc(strlen(str_val->value.string) + 1);
+    strcpy(escaped, str_val->value.string);
+    escaped = mpcf_escape(escaped);
+    printf("\"%s\"", escaped);
+    free(escaped);
 }
 
 /**
@@ -42,6 +51,21 @@ static lval *lval_read_double(const mpc_ast_t *tree)
     errno = 0;
     double num = strtod(tree->contents, NULL);
     return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal: %s", tree->contents);
+}
+
+/**
+ * Reads a string from an AST. Unescapes the contents of the
+ * string (/n, /t) etc. Also removes "" from start and end.
+ */
+static lval *lval_read_str(const mpc_ast_t *tree)
+{
+    tree->contents[strlen(tree->contents) - 1] = '\0';
+    char *unescaped = malloc(strlen(tree->contents + 1) + 1);
+    strcpy(unescaped, tree->contents + 1);
+    unescaped = mpcf_unescape(unescaped);
+    lval *str = lval_string(unescaped);
+    free(unescaped);
+    return str;
 }
 
 lval *lval_pop(lval *val, int i)
@@ -67,30 +91,27 @@ lval *lval_take(lval *val, int i)
     return x;
 }
 
-lval *lval_sexpression()
+lval *lval_error(const char *fmt, ...)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SEXPRESSION;
-    rv->value.list.count = 0;
-    rv->value.list.cell = 0;
-    return rv;
-}
+    lval *v = malloc(sizeof(lval));
+    v->type = LVAL_ERROR;
 
-lval *lval_symbol(char *symbol)
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SYMBOL;
-    rv->value.symbol = malloc(strlen(symbol) + 1);
-    strcpy(rv->value.symbol, symbol);
-    return rv;
-}
+    // Create a va list and initialize it
+    va_list va;
+    va_start(va, fmt);
 
-lval *lval_fun(lbuiltin function)
-{
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_BUILTIN_FUN;
-    rv->value.builtin = function;
-    return rv;
+    // Allocate 512 bytes of space
+    v->value.error = malloc(512);
+
+    // printf the error string with a maximum of 511 characters
+    vsnprintf(v->value.error, 511, fmt, va);
+
+    // Reallocate to number of bytes actually used
+    v->value.error = realloc(v->value.error, strlen(v->value.error) + 1);
+
+    // Cleanup our va list
+    va_end(va);
+    return v;
 }
 
 lval *lval_long(long num)
@@ -117,27 +138,31 @@ lval *lval_bool(bool bval)
     return rv;
 }
 
-lval *lval_error(const char *fmt, ...)
+lval *lval_string(const char *string)
 {
-    lval *v = malloc(sizeof(lval));
-    v->type = LVAL_ERROR;
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_STRING;
+    rv->value.string = malloc(strlen(string) + 1);
+    strcpy(rv->value.string, string);
+    return rv;
+}
 
-    // Create a va list and initialize it
-    va_list va;
-    va_start(va, fmt);
+lval *lval_symbol(const char *symbol)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SYMBOL;
+    rv->value.symbol = malloc(strlen(symbol) + 1);
+    strcpy(rv->value.symbol, symbol);
+    return rv;
+}
 
-    // Allocate 512 bytes of space
-    v->value.error = malloc(512);
-
-    // printf the error string with a maximum of 511 characters
-    vsnprintf(v->value.error, 511, fmt, va);
-
-    // Reallocate to number of bytes actually used
-    v->value.error = realloc(v->value.error, strlen(v->value.error) + 1);
-
-    // Cleanup our va list
-    va_end(va);
-    return v;
+lval *lval_sexpression()
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_SEXPRESSION;
+    rv->value.list.count = 0;
+    rv->value.list.cell = 0;
+    return rv;
 }
 
 lval *lval_qexpression()
@@ -146,6 +171,14 @@ lval *lval_qexpression()
     rv->type = LVAL_QEXPRESSION;
     rv->value.list.count = 0;
     rv->value.list.cell = 0;
+    return rv;
+}
+
+lval *lval_fun(lbuiltin function)
+{
+    lval *rv = malloc(sizeof(lval));
+    rv->type = LVAL_BUILTIN_FUN;
+    rv->value.builtin = function;
     return rv;
 }
 
@@ -187,6 +220,11 @@ lval *lval_read(const mpc_ast_t *tree)
     if (strstr(tree->tag, "boolean"))
     {
         return lval_bool(tree->contents[1] == 't');
+    }
+
+    if (strstr(tree->tag, "string"))
+    {
+        return lval_read_str(tree);
     }
 
     if (strstr(tree->tag, "symbol"))
@@ -235,6 +273,9 @@ void lval_print(const lval *v)
         break;
     case LVAL_BOOL:
         printf("%s", v->value.bval ? "#t" : "#f");
+        break;
+    case LVAL_STRING:
+        lval_print_string(v);
         break;
     case LVAL_SYMBOL:
         printf("%s", v->value.symbol);
@@ -291,6 +332,8 @@ bool lval_is_equal(lval *x, lval *y)
         return x->value.num_d == y->value.num_d;
     case LVAL_BOOL:
         return x->value.bval == y->value.bval;
+    case LVAL_STRING:
+        return (strcmp(x->value.string, y->value.string) == 0);
     case LVAL_ERROR:
         return (strcmp(x->value.error, y->value.error) == 0);
     case LVAL_SYMBOL:
@@ -328,6 +371,9 @@ void lval_del(lval *v)
     case LVAL_DOUBLE:
     case LVAL_BUILTIN_FUN:
     case LVAL_BOOL:
+        break;
+    case LVAL_STRING:
+        free(v->value.string);
         break;
     case LVAL_ERROR:
         free(v->value.error);
@@ -369,6 +415,10 @@ lval *lval_copy(lval *v)
         break;
     case LVAL_BOOL:
         rv->value.bval = v->value.bval;
+        break;
+    case LVAL_STRING:
+        rv->value.string = malloc(strlen(v->value.string + 1));
+        strcpy(rv->value.string, v->value.string);
         break;
     case LVAL_BUILTIN_FUN:
         rv->value.builtin = v->value.builtin;
@@ -412,6 +462,8 @@ char *ltype_name(int type)
             return "Decimal";
         case LVAL_BOOL:
             return "Boolean";
+        case LVAL_STRING:
+            return "String";
         case LVAL_ERROR:
             return "Error";
         case LVAL_SYMBOL:

@@ -23,6 +23,7 @@ enum
     LVAL_LONG,
     LVAL_DOUBLE,
     LVAL_BOOL,
+    LVAL_STRING,
     LVAL_SYMBOL,
     LVAL_BUILTIN_FUN,
     LVAL_SEXPRESSION,
@@ -38,10 +39,11 @@ struct lval
     int type;
     union
     {
+        char *error;
         long num_l;
         double num_d;
         bool bval;
-        char *error;
+        char *string;
         char *symbol;
 
         // s-expressions or q-expressions
@@ -73,20 +75,9 @@ lval *lval_pop(lval *val, int i);
 lval *lval_take(lval *val, int i);
 
 /**
- * Generates a new lval for an s-expression. The returned value
- * contains no data and represents the start of an lval hierarchy.
+ * Generates a new lval with an error message.
  */
-lval *lval_sexpression();
-
-/**
- * Genereates a new lval for a symbol.
- */
-lval *lval_symbol(char *symbol);
-
-/**
- * Generates a new lval for a function call.
- */
-lval *lval_fun(lbuiltin function);
+lval *lval_error(const char *fmt, ...);
 
 /**
  * Generates a new lval for a long integer.
@@ -104,15 +95,31 @@ lval *lval_double(double num);
 lval *lval_bool(bool bval);
 
 /**
- * Generates a new lval with an error message.
+ * Generates a new lval for a string.
  */
-lval *lval_error(const char *fmt, ...);
+lval *lval_string(const char *string);
+
+/**
+ * Genereates a new lval for a symbol.
+ */
+lval *lval_symbol(const char *symbol);
+
+/**
+ * Generates a new lval for an s-expression. The returned value
+ * contains no data and represents the start of an lval hierarchy.
+ */
+lval *lval_sexpression();
 
 /**
  * Generates a new lval for a q-expression. The returned value
  * contains no data and represents the start of an lval hierarchy.
  */
 lval *lval_qexpression();
+
+/**
+ * Generates a new lval for a function call.
+ */
+lval *lval_fun(lbuiltin function);
 
 /**
  * Generates a new lval for a lambda expression.
