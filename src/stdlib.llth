@@ -1,0 +1,20 @@
+;;; Lilith Standard Library
+
+;; Function to define functions.
+;; (defun {function_name params...} {function_body})
+(def {defun}
+    (\ {args body}
+       {def (head args) (\ (tail args) body)}
+    )
+)
+
+;; Returns true if x is a member of q-expression y
+(defun {member? x y}
+  {if (= y {})
+    {#f}
+    {if (= x (eval (head y)))
+      {#t}
+      {member? x (tail y)}
+    }
+  }
+)
