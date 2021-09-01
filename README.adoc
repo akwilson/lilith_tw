@@ -1,5 +1,22 @@
-# Lilith Lisp
+= Lilith Lisp
 
 A Lisp interpreter.
-Eventually...
+
+== Build Lilith
+Both Linux and Mac OS are supported.
+
+Lilith has a dependency on the `editline` library.
+Many platforms (Mac OS) have this installed as standard but if not it will be available through your package manager.
+E.g. on Ubuntu
+
+ $ sudo apt install libedit-dev
+
+Lilith's makefiles use my own make package, `simplified-make` which is also available on Github. From the root directory of the project run,
+
+ $ git submodule init
+ $ git submodule update
+
+From there just make the project.
+
+ $ make
 
