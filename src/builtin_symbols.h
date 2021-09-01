@@ -19,6 +19,9 @@
 #define BUILTIN_SYM_AND "and"
 #define BUILTIN_SYM_OR "or"
 #define BUILTIN_SYM_NOT "not"
+#define BUILTIN_SYM_LOAD "load"
+#define BUILTIN_SYM_PRINT "print"
+#define BUILTIN_SYM_ERROR "error"
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

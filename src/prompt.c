@@ -7,49 +7,35 @@
 #include <editline/history.h>
 #endif
 
-#include "mpc.h"
 #include "lilith_int.h"
+#include "builtin_symbols.h"
 
-/**
- * Counts the number of leaves on an AST.
- */
-static int leaf_count(mpc_ast_t *tree, int sofar)
+mpc_parser_t *lilith_p;
+
+static void load_and_eval_from_file(lenv *env, const char *filename)
 {
-    if (strstr(tree->tag, "number") || strstr(tree->tag, "operator"))
+    lval *args = lval_add(lval_sexpression(), lval_string(filename));
+    lval *x = call_builtin(env, BUILTIN_SYM_LOAD, args);
+    if (x->type == LVAL_ERROR)
     {
-        return sofar + 1;
+        lval_println(x);
     }
 
-    int x = 0;
-    for (int i = 0; i < tree->children_num; i++)
-    {
-        x += leaf_count(tree->children[i], sofar);
-    }
-
-    return x;
+    lval_del(x);
 }
 
 int main(int argc, char *argv[])
 {
-    bool ast_print = false;
-    if (argc > 1)
-    {
-        if (strcmp(argv[1], "-a") == 0)
-        {
-            ast_print = true;
-        }
-    }
-
-    mpc_parser_t *number = mpc_new("number");
-    mpc_parser_t *decimal = mpc_new("decimal");
-    mpc_parser_t *boolean = mpc_new("boolean");
-    mpc_parser_t *string = mpc_new("string");
-    mpc_parser_t *comment = mpc_new("comment");
-    mpc_parser_t *symbol = mpc_new("symbol");
-    mpc_parser_t *sexpression = mpc_new("sexpression");
-    mpc_parser_t *qexpression = mpc_new("qexpression");
-    mpc_parser_t *expression = mpc_new("expression");
-    mpc_parser_t *lilith = mpc_new("lilith");
+    mpc_parser_t *number_p = mpc_new("number");
+    mpc_parser_t *decimal_p = mpc_new("decimal");
+    mpc_parser_t *boolean_p = mpc_new("boolean");
+    mpc_parser_t *string_p = mpc_new("string");
+    mpc_parser_t *comment_p = mpc_new("comment");
+    mpc_parser_t *symbol_p = mpc_new("symbol");
+    mpc_parser_t *sexpression_p = mpc_new("sexpression");
+    mpc_parser_t *qexpression_p = mpc_new("qexpression");
+    mpc_parser_t *expression_p = mpc_new("expression");
+    lilith_p = mpc_new("lilith");
 
     mpca_lang(MPCA_LANG_DEFAULT,
             "                                                                           \
@@ -65,10 +51,19 @@ int main(int argc, char *argv[])
                               <symbol> | <sexpression> | <qexpression> ;                \
                 lilith      : /^/ <expression>* /$/ ;                                   \
             ",
-            number, decimal, boolean, string, comment, symbol, sexpression, qexpression, expression, lilith);
+            number_p, decimal_p, boolean_p, string_p, comment_p, symbol_p,
+            sexpression_p, qexpression_p, expression_p, lilith_p);
 
     lenv *env = lenv_new();
     lenv_add_builtins(env);
+
+    if (argc > 1)
+    {
+        for (int i = 1; i < argc; i++)
+        {
+            load_and_eval_from_file(env, argv[i]);
+        }
+    }
 
     printf("Lilith Lisp v0.0.1\n");
     printf("Ctrl+C or 'exit' to exit\n\n");
@@ -87,14 +82,8 @@ int main(int argc, char *argv[])
         {
             lenv_print(env);
         }
-        else if (mpc_parse("<stdin>", input, lilith, &parse_result))
+        else if (mpc_parse("<stdin>", input, lilith_p, &parse_result))
         {
-            if (ast_print)
-            {
-                mpc_ast_print(parse_result.output);
-                printf("Leaf count: %d\n", leaf_count(parse_result.output, 0));
-            }
-
             lval *result = lval_eval(env, lval_read(parse_result.output));
             lval_println(result);
             lval_del(result);
@@ -109,8 +98,8 @@ int main(int argc, char *argv[])
         free(input);
     }
 
-    mpc_cleanup(10, number, decimal, boolean, string, comment, symbol,
-        sexpression, qexpression, expression, lilith);
+    mpc_cleanup(10, number_p, decimal_p, boolean_p, string_p, comment_p,
+        symbol_p, sexpression_p, qexpression_p, expression_p, lilith_p);
     lenv_del(env);
     return 0;
 }

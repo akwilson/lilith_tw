@@ -9,6 +9,8 @@
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
+extern mpc_parser_t *lilith_p;
+
 /*
  * Error checking macros.
  */
@@ -537,6 +539,87 @@ static lval *builtin_if(lenv *env, lval *val)
     return rv;
 }
 
+/**
+ * Loads and evaluates lilith code from a file. Filename specified in val.
+ */
+static lval *builtin_load(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LOAD);
+
+    mpc_result_t result;
+    if (mpc_parse_contents(LVAL_EXPR_ITEM(val, 0)->value.string, lilith_p, &result))
+    {
+        // Read contents of file
+        lval *expr = lval_read(result.output);
+        mpc_ast_delete(result.output);
+
+        // Evaluate each expression
+        while (LVAL_EXPR_CNT(expr))
+        {
+            lval *x = lval_eval(env, lval_pop(expr, 0));
+            if (x->type == LVAL_ERROR)
+            {
+                lval_println(x);
+            }
+
+            lval_del(x);
+        }
+
+        // Delete expressions and arguments
+        lval_del(expr);
+        lval_del(val);
+
+        return lval_sexpression();
+    }
+    else
+    {
+        // Handle parse errors -- return as an lval_error()
+        char *err_msg = mpc_err_string(result.error);
+        mpc_err_delete(result.error);
+
+        lval *err = lval_error("load failed %s", err_msg);
+        free(err_msg);
+        lval_del(val);
+        return err;
+    }
+}
+
+/**
+ * Built-in function to print an lval to the screen.
+ */
+static lval *builtin_print(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_ERROR);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_ERROR);
+    LASSERT_TYPE_ARG(val, 0, LVAL_STRING, BUILTIN_SYM_ERROR);
+
+    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
+    {
+        lval_print(LVAL_EXPR_ITEM(val, i));
+        putchar(' ');
+    }
+
+    putchar('\n');
+    lval_del(val);
+
+    return lval_sexpression();
+}
+
+/**
+ * Built-in function to generate an error message.
+ */
+static lval *builtin_error(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
+    
+    lval *err = lval_error(LVAL_EXPR_ITEM(val, 0)->value.string);
+
+    /* Delete arguments and return */
+    lval_del(val);
+    return err;
+}
+
 static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
 {
     lval *k = lval_symbol(name);
@@ -577,4 +660,7 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_AND, builtin_and);
     lenv_add_builtin(e, BUILTIN_SYM_OR, builtin_or);
     lenv_add_builtin(e, BUILTIN_SYM_NOT, builtin_not);
+    lenv_add_builtin(e, BUILTIN_SYM_LOAD, builtin_load);
+    lenv_add_builtin(e, BUILTIN_SYM_PRINT, builtin_print);
+    lenv_add_builtin(e, BUILTIN_SYM_ERROR, builtin_error);
 }
