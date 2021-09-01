@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     mpc_parser_t *decimal = mpc_new("decimal");
     mpc_parser_t *boolean = mpc_new("boolean");
     mpc_parser_t *string = mpc_new("string");
+    mpc_parser_t *comment = mpc_new("comment");
     mpc_parser_t *symbol = mpc_new("symbol");
     mpc_parser_t *sexpression = mpc_new("sexpression");
     mpc_parser_t *qexpression = mpc_new("qexpression");
@@ -51,18 +52,20 @@ int main(int argc, char *argv[])
     mpc_parser_t *lilith = mpc_new("lilith");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-            "                                                                                                          \
-                number      : /-?[0-9]+/ ;                                                                             \
-                decimal     : /-?[0-9]+\\.[0-9]+/ ;                                                                    \
-                boolean     : \"#t\" | \"#f\" | \"#true\" | \"#false\" ;                                               \
-                string      : /\"(\\\\.|[^\"])*\"/ ;                                                                   \
-                symbol      : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&?]+/ ;                                                      \
-                sexpression : '(' <expression>* ')' ;                                                                  \
-                qexpression : '{' <expression>* '}' ;                                                                  \
-                expression  : <decimal> | <number> | <boolean> | <string> | <symbol> | <sexpression> | <qexpression> ; \
-                lilith      : /^/ <expression>* /$/ ;                                                                  \
+            "                                                                           \
+                number      : /-?[0-9]+/ ;                                              \
+                decimal     : /-?[0-9]+\\.[0-9]+/ ;                                     \
+                boolean     : \"#t\" | \"#f\" | \"#true\" | \"#false\" ;                \
+                string      : /\"(\\\\.|[^\"])*\"/ ;                                    \
+                comment     : /;[^\\r\\n]*/ ;                                           \
+                symbol      : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&?]+/ ;                       \
+                sexpression : '(' <expression>* ')' ;                                   \
+                qexpression : '{' <expression>* '}' ;                                   \
+                expression  : <decimal> | <number> | <boolean> | <string> | <comment> | \
+                              <symbol> | <sexpression> | <qexpression> ;                \
+                lilith      : /^/ <expression>* /$/ ;                                   \
             ",
-            number, decimal, boolean, string, symbol, sexpression, qexpression, expression, lilith);
+            number, decimal, boolean, string, comment, symbol, sexpression, qexpression, expression, lilith);
 
     lenv *env = lenv_new();
     lenv_add_builtins(env);
@@ -106,7 +109,8 @@ int main(int argc, char *argv[])
         free(input);
     }
 
-    mpc_cleanup(9, number, decimal, boolean, string, symbol, sexpression, qexpression, expression, lilith);
+    mpc_cleanup(10, number, decimal, boolean, string, comment, symbol,
+        sexpression, qexpression, expression, lilith);
     lenv_del(env);
     return 0;
 }

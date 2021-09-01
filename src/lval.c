@@ -250,7 +250,8 @@ lval *lval_read(const mpc_ast_t *tree)
             (strcmp(tree->children[i]->contents, ")") == 0) ||
             (strcmp(tree->children[i]->contents, "{") == 0) ||
             (strcmp(tree->children[i]->contents, "}") == 0) ||
-            (strcmp(tree->children[i]->tag,  "regex") == 0))
+            (strcmp(tree->children[i]->tag,  "regex") == 0) ||
+            (strstr(tree->children[i]->tag, "comment")))
         {
             continue;
         }
