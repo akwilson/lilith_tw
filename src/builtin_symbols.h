@@ -22,6 +22,7 @@
 #define BUILTIN_SYM_LOAD "load"
 #define BUILTIN_SYM_PRINT "print"
 #define BUILTIN_SYM_ERROR "error"
+#define BUILTIN_SYM_READ "read"
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

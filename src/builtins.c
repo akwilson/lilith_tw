@@ -612,6 +612,44 @@ static lval *builtin_if(lenv *env, lval *val)
 }
 
 /**
+ * Evaluates all of the expressions in a parsed result.
+ */
+static void parser_eval(lenv *env, const mpc_result_t* result)
+{
+    // Read contents of file
+    lval *expr = lval_read(result->output);
+    mpc_ast_delete(result->output);
+
+    // Evaluate each expression
+    while (LVAL_EXPR_CNT(expr))
+    {
+        lval *x = lval_eval(env, lval_pop(expr, 0));
+        if (x->type == LVAL_ERROR)
+        {
+            lval_println(x);
+        }
+
+        lval_del(x);
+    }
+
+    // Delete expressions and arguments
+    lval_del(expr);
+}
+
+/**
+ * Handle parse errors -- return as an lval_error().
+ */
+static lval *parser_error(const mpc_result_t* result, const char *symbol)
+{
+    char *err_msg = mpc_err_string(result->error);
+    mpc_err_delete(result->error);
+
+    lval *err = lval_error("function '%s' failed %s", symbol, err_msg);
+    free(err_msg);
+    return err;
+}
+
+/**
  * Loads and evaluates lilith code from a file. Filename specified in val.
  */
 static lval *builtin_load(lenv *env, lval *val)
@@ -622,36 +660,36 @@ static lval *builtin_load(lenv *env, lval *val)
     mpc_result_t result;
     if (mpc_parse_contents(LVAL_EXPR_ITEM(val, 0)->value.string, lilith_p, &result))
     {
-        // Read contents of file
-        lval *expr = lval_read(result.output);
-        mpc_ast_delete(result.output);
-
-        // Evaluate each expression
-        while (LVAL_EXPR_CNT(expr))
-        {
-            lval *x = lval_eval(env, lval_pop(expr, 0));
-            if (x->type == LVAL_ERROR)
-            {
-                lval_println(x);
-            }
-
-            lval_del(x);
-        }
-
-        // Delete expressions and arguments
-        lval_del(expr);
+        parser_eval(env, &result);
         lval_del(val);
-
         return lval_sexpression();
     }
     else
     {
-        // Handle parse errors -- return as an lval_error()
-        char *err_msg = mpc_err_string(result.error);
-        mpc_err_delete(result.error);
+        lval *err = parser_error(&result, BUILTIN_SYM_LOAD);
+        lval_del(val);
+        return err;
+    }
+}
 
-        lval *err = lval_error("load failed %s", err_msg);
-        free(err_msg);
+/**
+ * Reads in a string and converts it to a q-expression.
+ */
+static lval *builtin_read(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_READ);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_READ);
+
+    mpc_result_t result;
+    if (mpc_parse("<string>", LVAL_EXPR_ITEM(val, 0)->value.string, lilith_p, &result))
+    {
+        lval *rv = lval_add(lval_qexpression(), lval_read(result.output));
+        lval_del(val);
+        return rv;
+    }
+    else
+    {
+        lval *err = parser_error(&result, BUILTIN_SYM_READ);
         lval_del(val);
         return err;
     }
@@ -735,4 +773,5 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_LOAD, builtin_load);
     lenv_add_builtin(e, BUILTIN_SYM_PRINT, builtin_print);
     lenv_add_builtin(e, BUILTIN_SYM_ERROR, builtin_error);
+    lenv_add_builtin(e, BUILTIN_SYM_READ, builtin_read);
 }
