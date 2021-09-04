@@ -241,14 +241,8 @@ static lval *builtin_not(lenv *env, lval *val)
     return lval_bool(!x->value.bval);
 }
 
-/**
- * Built-in function to return the first element of a q-expression.
- */
-static lval *builtin_head(lenv *env, lval *val)
+static lval *head_qexpr(lval *val)
 {
-    LASSERT_ENV(val, env, BUILTIN_SYM_HEAD);
-    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_HEAD);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_HEAD);
     LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_HEAD);
 
     lval *rv = lval_take(val, 0);
@@ -260,6 +254,48 @@ static lval *builtin_head(lenv *env, lval *val)
     return rv;
 }
 
+static lval *head_string(lval *val)
+{
+    char head[2];
+    head[0] = LVAL_EXPR_ITEM(val, 0)->value.string[0];
+    head[1] = 0;
+    lval *rv = lval_string(head);
+    lval_del(val);
+    return rv;
+}
+
+/**
+ * Built-in function to return the first element of a q-expression.
+ */
+static lval *builtin_head(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_HEAD);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_HEAD);
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION || LVAL_EXPR_ITEM(val, 0)->type == LVAL_STRING,
+        "function '%s' type mismatch - expected String or Q-Expression, received %s",
+        BUILTIN_SYM_HEAD, ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
+    
+    if (LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION)
+    {
+        return head_qexpr(val);
+    }
+    
+    return head_string(val);
+}
+
+static lval *tail_string(lval *val)
+{
+    const char *str = LVAL_EXPR_ITEM(val, 0)->value.string;
+    if (strlen(str) > 1)
+    {
+        lval *rv = lval_string(LVAL_EXPR_ITEM(val, 0)->value.string + 1);
+        lval_del(val);
+        return rv;
+    }
+
+    return lval_string("");
+}
+
 /**
  * Built-in function to return all elements of a q-expression except the first.
  */
@@ -267,18 +303,26 @@ static lval *builtin_tail(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_TAIL);
     LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_TAIL);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_TAIL);
-    LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_TAIL);
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION || LVAL_EXPR_ITEM(val, 0)->type == LVAL_STRING,
+        "function '%s' type mismatch - expected String or Q-Expression, received %s",
+        BUILTIN_SYM_TAIL, ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
 
-    lval *rv = lval_take(val, 0);
-    lval_del(lval_pop(rv, 0));
-    return rv;
+    if (LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION)
+    {
+        LASSERT(val, LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_TAIL);
+
+        lval *rv = lval_take(val, 0);
+        lval_del(lval_pop(rv, 0));
+        return rv;
+    }
+
+    return tail_string(val);
 }
 
 /**
  * Add all elements of the second q-expression to the first.
  */
-static lval *lval_join(lval *x, lval* y)
+static lval *lval_join_qexpr(lval *x, lval* y)
 {
     while (LVAL_EXPR_CNT(y))
     {
@@ -289,6 +333,14 @@ static lval *lval_join(lval *x, lval* y)
     return x;
 }
 
+static lval *lval_join_string(lval *x, lval *y)
+{
+    int l = strlen(x->value.string) + strlen(y->value.string) + 1;
+    char str[l];
+    sprintf(str, "%s%s", x->value.string, y->value.string);
+    return lval_string(str);
+}
+
 /**
  * Built-in function to join q-expressions together.
  */
@@ -296,15 +348,28 @@ static lval *builtin_join(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_JOIN);
 
+    lval *x = lval_pop(val, 0);
     for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
-        LASSERT_TYPE_ARG(val, i, LVAL_QEXPRESSION, BUILTIN_SYM_JOIN);
+        LASSERT(val, LVAL_EXPR_ITEM(val, i)->type == LVAL_QEXPRESSION || LVAL_EXPR_ITEM(val, i)->type == LVAL_STRING,
+            "function '%s' type mismatch - expected String or Q-Expression, received %s",
+            BUILTIN_SYM_JOIN, ltype_name(LVAL_EXPR_ITEM(val, i)->type));
+
+        LASSERT(val, x->type == LVAL_EXPR_ITEM(val, i)->type,
+            "function '%s' type mismatch - inconsistent argument types %s vs %s",
+            BUILTIN_SYM_JOIN, ltype_name(x->type), ltype_name(LVAL_EXPR_ITEM(val, i)->type));
     }
 
-    lval *x = lval_pop(val, 0);
     while (LVAL_EXPR_CNT(val))
     {
-        x = lval_join(x, lval_pop(val, 0));
+        if (LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION)
+        {
+            x = lval_join_qexpr(x, lval_pop(val, 0));
+        }
+        else
+        {
+            x = lval_join_string(x, lval_pop(val, 0));
+        }
     }
 
     lval_del(val);
@@ -342,10 +407,17 @@ static lval *builtin_len(lenv *env, lval *val)
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_LEN);
     LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LEN);
-    LASSERT_TYPE_ARG(val, 0, LVAL_QEXPRESSION, BUILTIN_SYM_LEN);
+    LASSERT(val, LVAL_EXPR_ITEM(val, 0)->type == LVAL_QEXPRESSION || LVAL_EXPR_ITEM(val, 0)->type == LVAL_STRING,
+        "function '%s' type mismatch - expected String or Q-Expression, received %s",
+        BUILTIN_SYM_LEN, ltype_name(LVAL_EXPR_ITEM(val, 0)->type));
 
     lval *x = lval_take(val, 0);
-    return lval_long(LVAL_EXPR_CNT(x));
+    if (x->type == LVAL_QEXPRESSION)
+    {
+        return lval_long(LVAL_EXPR_CNT(x));
+    }
+
+    return lval_long(strlen(x->value.string));
 }
 
 /**
