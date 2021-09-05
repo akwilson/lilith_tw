@@ -1,18 +1,141 @@
-;;; Lilith Standard Library
+;;; Lilith Standard Library ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Function to define functions.
-;; (defun {function_name params...} {function_body})
+;; Atoms ----------------------------------------------------------------------
+
+(def {nil} {})
+
+; Function to define functions.
+; (defun {function_name params...} {function_body})
 (def {defun}
-    (\ {args body}
-       {def (head args) (\ (tail args) body)}
-    )
+  (\ {args body}
+    {def (head args) (\ (tail args) body)}
+  )
 )
 
-;; Returns true if x is a member of q-expression y
+;; Simple Predicates ----------------------------------------------------------
+
+(defun {nil? x} {= x nil})
+(defun {zero? x} {= x 0})
+(defun {even? x} {= 0 (% x 2)})
+(defun {odd? x} {not (even? x)})
+
+;; Currying / Uncurrying ------------------------------------------------------
+
+; Calls a function with each list member as a parameter
+; (unpack + {1 2 3 4})
+(defun {unpack f l} {eval (join (list f) l)})
+
+; Calls a function with the arguments merged in to a list
+; (pack head 1 2 3 4)
+(defun {pack f & xs} {f xs})
+
+; Aliases for above
+(def {curry} unpack)
+(def {uncurry} pack)
+
+;; Core features --------------------------------------------------------------
+
+; Evaluates a sequence of expressions and returns the result of the final one
+(defun {do & l}
+  {if (nil? l)
+    {nil}
+    {last l}
+  }
+)
+
+; Defines a local variable
+(defun {let b} { ((\ {_} b) ()) })
+
+;; List functions -------------------------------------------------------------
+
+; Returns the first, second or third item in a list
+(defun {fst l} { eval (head l) })
+(defun {snd l} { eval (head (tail l)) })
+(defun {trd l} { eval (head (tail (tail l))) })
+
+; Returns the n-th item in a list
+(defun {nth n l}
+  {if (zero? n)
+    {fst l}
+    {nth (- n 1) (tail l)}
+  }
+)
+
+; Returns the last item in a list
+(defun {last l} {nth (- (len l) 1) l})
+
+; Call f on each element of l
+(defun {map f l}
+  {if (nil? l)
+    {nil}
+    {join (list (f (fst l))) (map f (tail l))}
+  }
+)
+
+; Filters a list. Creates new list where each value in l matches the predicate f.
+(defun {filter f l}
+  {if (nil? l)
+    {nil}
+    {join
+      (if (f (fst l)) {head l} {nil})
+      (filter f (tail l))
+    }
+  }
+)
+
+; Sum all values in a list
+(defun {sum l} {foldl + 0 l})
+
+; Get the product of a list
+(defun {product l} {foldl * 1 l})
+
+; Accumulate a single value from a function applied to all elements of a list
+(defun {foldl f z l}
+  {if (nil? l)
+    {z}
+    {foldl f (f z (fst l)) (tail l)}
+  }
+)
+
+;; Conditionals ---------------------------------------------------------------
+
+; define 'default'
+(def {otherwise} #t)
+
+; Evaluates a branch when the condition is met
+(defun {select & cs}
+  {if (nil? cs)
+    {error "selection not found"}
+    {if (fst (fst cs))
+      {snd (fst cs)}
+      {unpack select (tail cs)}
+    }
+  }
+)
+
+(defun {case x & cs}
+  {if (nil? cs)
+    {error "no case found"}
+    {if (= x (fst (fst cs)))
+      {snd (fst cs)}
+      {unpack case (join (list x) (tail cs))}
+    }
+  }
+)
+
+;; Utilities ------------------------------------------------------------------
+
+; Calls a function with the arguments reversed
+(defun {flip f a b} {f b a})
+
+; Composes a function
+(defun {comp f g x} {f (g x)})
+
+; Returns true if x is a member of q-expression y
 (defun {member? x y}
-  {if (= y {})
+  {if (nil? y)
     {#f}
-    {if (= x (eval (head y)))
+    {if (= x (fst y))
       {#t}
       {member? x (tail y)}
     }
