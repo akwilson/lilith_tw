@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("Lilith Lisp v0.0.1\n");
+    printf("Lilith Lisp v0.1.0\n");
     printf("Ctrl+C or 'exit' to exit\n\n");
 
     while (1)

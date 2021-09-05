@@ -35,7 +35,8 @@
 
 ;; Core features --------------------------------------------------------------
 
-; Evaluates a sequence of expressions and returns the result of the final one
+; Evaluates a sequence of expressions and
+; returns the result of the final one
 (defun {do & l}
   {if (nil? l)
     {nil}
@@ -72,7 +73,8 @@
   }
 )
 
-; Filters a list. Creates new list where each value in l matches the predicate f.
+; Filters a list. Creates new list where each value
+; in l matches the predicate f.
 (defun {filter f l}
   {if (nil? l)
     {nil}
@@ -89,7 +91,8 @@
 ; Get the product of a list
 (defun {product l} {foldl * 1 l})
 
-; Accumulate a single value from a function applied to all elements of a list
+; Accumulate a single value from a function
+; applied to all elements of a list
 (defun {foldl f z l}
   {if (nil? l)
     {z}
@@ -113,6 +116,8 @@
   }
 )
 
+; C-like switch/case statement. Evaluate an expression
+; if a constant value matches.
 (defun {case x & cs}
   {if (nil? cs)
     {error "no case found"}
