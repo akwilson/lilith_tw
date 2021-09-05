@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
                 boolean     : \"#t\" | \"#f\" | \"#true\" | \"#false\" ;                \
                 string      : /\"(\\\\.|[^\"])*\"/ ;                                    \
                 comment     : /;[^\\r\\n]*/ ;                                           \
-                symbol      : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&?]+/ ;                       \
+                symbol      : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&%?]+/ ;                      \
                 sexpression : '(' <expression>* ')' ;                                   \
                 qexpression : '{' <expression>* '}' ;                                   \
                 expression  : <decimal> | <number> | <boolean> | <string> | <comment> | \
