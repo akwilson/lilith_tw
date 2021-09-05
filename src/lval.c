@@ -418,7 +418,7 @@ lval *lval_copy(lval *v)
         rv->value.bval = v->value.bval;
         break;
     case LVAL_STRING:
-        rv->value.string = malloc(strlen(v->value.string + 1));
+        rv->value.string = malloc(strlen(v->value.string) + 1);
         strcpy(rv->value.string, v->value.string);
         break;
     case LVAL_BUILTIN_FUN:
@@ -428,7 +428,7 @@ lval *lval_copy(lval *v)
         rv->value.error = v->value.error;
         break;
     case LVAL_SYMBOL:
-        rv->value.symbol = malloc(strlen(v->value.symbol + 1));
+        rv->value.symbol = malloc(strlen(v->value.symbol) + 1);
         strcpy(rv->value.symbol, v->value.symbol);
         break;
     case LVAL_QEXPRESSION:
