@@ -85,12 +85,6 @@
   }
 )
 
-; Sum all values in a list
-(defun {sum l} {foldl + 0 l})
-
-; Get the product of a list
-(defun {product l} {foldl * 1 l})
-
 ; Accumulate a single value from a function
 ; applied to all elements of a list
 (defun {foldl f z l}
@@ -99,6 +93,34 @@
     {foldl f (f z (fst l)) (tail l)}
   }
 )
+
+; Sum all values in a list
+(defun {sum l} {foldl + 0 l})
+
+; Get the product of a list
+(defun {product l} {foldl * 1 l})
+
+; Returns the length of a list. O(n)...
+(defun {length l} {foldl (\ {x _} {+ x 1}) 0 l})
+
+; Take n items from list l
+(defun {take n l}
+  {if (zero? n)
+    {nil}
+    {join (head l) (take (- n 1) (tail l))}
+  }
+)
+
+; Drop n items from list l
+(defun {drop n l}
+  {if (zero? n)
+    {l}
+    {drop (- n 1) (tail l)}
+  }
+)
+
+; Split the list in to two at the given position
+(defun {split n l} {list (take n l) (drop n l)})
 
 ;; Conditionals ---------------------------------------------------------------
 
