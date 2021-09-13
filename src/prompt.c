@@ -79,31 +79,39 @@ int main(int argc, char *argv[])
     while (running)
     {
         char *input = readline("lilith> ");
-        add_history(input);
-        mpc_result_t parse_result;
+        if (input)
+        {
+            add_history(input);
+            mpc_result_t parse_result;
 
-        if (strcmp(input, "exit") == 0)
-        {
-            running = 0;
-        }
-        else if (strcmp(input, "env") == 0)
-        {
-            lenv_print(env);
-        }
-        else if (mpc_parse("<stdin>", input, lilith_p, &parse_result))
-        {
-            lval *result = lval_eval(env, lval_read(parse_result.output));
-            lval_println(result);
-            lval_del(result);
-            mpc_ast_delete(parse_result.output);
+            if (strcmp(input, "exit") == 0)
+            {
+                running = 0;
+            }
+            else if (strcmp(input, "env") == 0)
+            {
+                lenv_print(env);
+            }
+            else if (mpc_parse("<stdin>", input, lilith_p, &parse_result))
+            {
+                lval *result = lval_eval(env, lval_read(parse_result.output));
+                lval_println(result);
+                lval_del(result);
+                mpc_ast_delete(parse_result.output);
+            }
+            else
+            {
+                mpc_err_print(parse_result.error);
+                mpc_err_delete(parse_result.error);
+            }
+
+            free(input);
         }
         else
         {
-            mpc_err_print(parse_result.error);
-            mpc_err_delete(parse_result.error);
+            putchar('\n');
+            running = 0;
         }
-
-        free(input);
     }
 
     mpc_cleanup(10, number_p, decimal_p, boolean_p, string_p, comment_p,

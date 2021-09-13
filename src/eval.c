@@ -133,7 +133,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     }
 
     // Single expression
-    if (LVAL_EXPR_CNT(val) == 1)
+    if (LVAL_EXPR_CNT(val) == 1 && (LVAL_EXPR_ITEM(val, 0)->type != LVAL_BUILTIN_FUN))
     {
         return lval_take(val, 0);
     }
