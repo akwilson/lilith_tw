@@ -24,6 +24,21 @@ static void load_and_eval_from_file(lenv *env, const char *filename)
     lval_del(x);
 }
 
+static void version()
+{
+    printf("Lilith Lisp v0.1.0\n");
+}
+
+static void usage()
+{
+    version();
+    printf("usage: lilith [-h] [-v] [-l] file...\n");
+    printf("  -h : display this help message\n");
+    printf("  -v : display version number\n");
+    printf("  -l : load and evaluate file(s) and enter interpreter\n");
+    printf("Additional arguments read as files and evaluated\n");
+}
+
 int main(int argc, char *argv[])
 {
     int running = 1;
@@ -60,19 +75,32 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
-        running = (strcmp(argv[1], "-l") == 0);
-        for (int i = 1; i < argc; i++)
+        if (strcmp(argv[1], "-h") == 0)
         {
-            if (argv[i][0] != '-')
+            usage();
+            running = 0;
+        }
+        else if (strcmp(argv[1], "-v") == 0)
+        {
+            version();
+            running = 0;
+        }
+        else
+        {
+            running = (strcmp(argv[1], "-l") == 0);
+            for (int i = 1; i < argc; i++)
             {
-                load_and_eval_from_file(env, argv[i]);
+                if (argv[i][0] != '-')
+                {
+                    load_and_eval_from_file(env, argv[i]);
+                }
             }
         }
     }
 
     if (running)
     {
-        printf("Lilith Lisp v0.1.0\n");
+        version();
         printf("Ctrl+C or 'exit' to exit\n\n");
     }
 
