@@ -26,6 +26,7 @@ static void load_and_eval_from_file(lenv *env, const char *filename)
 
 int main(int argc, char *argv[])
 {
+    int running = 1;
     mpc_parser_t *number_p = mpc_new("number");
     mpc_parser_t *decimal_p = mpc_new("decimal");
     mpc_parser_t *boolean_p = mpc_new("boolean");
@@ -59,16 +60,23 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
+        running = (strcmp(argv[1], "-l") == 0);
         for (int i = 1; i < argc; i++)
         {
-            load_and_eval_from_file(env, argv[i]);
+            if (argv[i][0] != '-')
+            {
+                load_and_eval_from_file(env, argv[i]);
+            }
         }
     }
 
-    printf("Lilith Lisp v0.1.0\n");
-    printf("Ctrl+C or 'exit' to exit\n\n");
+    if (running)
+    {
+        printf("Lilith Lisp v0.1.0\n");
+        printf("Ctrl+C or 'exit' to exit\n\n");
+    }
 
-    while (1)
+    while (running)
     {
         char *input = readline("lilith> ");
         add_history(input);
@@ -76,7 +84,7 @@ int main(int argc, char *argv[])
 
         if (strcmp(input, "exit") == 0)
         {
-            break;
+            running = 0;
         }
         else if (strcmp(input, "env") == 0)
         {
