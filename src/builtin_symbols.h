@@ -24,6 +24,12 @@
 #define BUILTIN_SYM_ERROR "error"
 #define BUILTIN_SYM_READ "read"
 #define BUILTIN_SYM_ENV "env"
+#define BUILTIN_SYM_IS_STRING "string?"
+#define BUILTIN_SYM_IS_LONG "number?"
+#define BUILTIN_SYM_IS_DOUBLE "decimal?"
+#define BUILTIN_SYM_IS_BOOL "boolean?"
+#define BUILTIN_SYM_IS_QEXPR "q-expression?"
+#define BUILTIN_SYM_IS_SEXPR "s-expression?"
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

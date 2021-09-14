@@ -700,9 +700,9 @@ static lval *builtin_read(lenv *env, lval *val)
  */
 static lval *builtin_print(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, BUILTIN_SYM_ERROR);
-    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_ERROR);
-    LASSERT_TYPE_ARG(val, 0, LVAL_STRING, BUILTIN_SYM_ERROR);
+    LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
+    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LOAD);
+    LASSERT_TYPE_ARG(val, 0, LVAL_STRING, BUILTIN_SYM_LOAD);
 
     for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
@@ -721,7 +721,7 @@ static lval *builtin_print(lenv *env, lval *val)
  */
 static lval *builtin_error(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
+    LASSERT_ENV(val, env, BUILTIN_SYM_ERROR);
     
     lval *err = lval_error(LVAL_EXPR_ITEM(val, 0)->value.string);
 
@@ -739,6 +739,46 @@ static lval *builtin_env(lenv *env, lval *val)
 
     lval_del(val);
     return lenv_to_lval(env);
+}
+
+static lval *check_type(lenv *env, lval *val, int type, const char *fname)
+{
+    LASSERT_ENV(val, env, fname);
+    LASSERT_NUM_ARGS(val, 1, fname);
+
+    lval *rv = lval_bool(LVAL_EXPR_ITEM(val, 0)->type == type);
+    lval_del(val);
+    return rv;
+}
+
+static lval *builtin_is_string(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_STRING, BUILTIN_SYM_IS_STRING);
+}
+
+static lval *builtin_is_long(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_LONG, BUILTIN_SYM_IS_LONG);
+}
+
+static lval *builtin_is_double(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_DOUBLE, BUILTIN_SYM_IS_DOUBLE);
+}
+
+static lval *builtin_is_bool(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_BOOL, BUILTIN_SYM_IS_BOOL);
+}
+
+static lval *builtin_is_qexpr(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_QEXPRESSION, BUILTIN_SYM_IS_QEXPR);
+}
+
+static lval *builtin_is_sexpr(lenv *env, lval *val)
+{
+    return check_type(env, val, LVAL_SEXPRESSION, BUILTIN_SYM_IS_SEXPR);
 }
 
 static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
@@ -786,4 +826,10 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_ERROR, builtin_error);
     lenv_add_builtin(e, BUILTIN_SYM_READ, builtin_read);
     lenv_add_builtin(e, BUILTIN_SYM_ENV, builtin_env);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_STRING, builtin_is_string);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_LONG, builtin_is_long);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_DOUBLE, builtin_is_double);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_BOOL, builtin_is_bool);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_QEXPR, builtin_is_qexpr);
+    lenv_add_builtin(e, BUILTIN_SYM_IS_SEXPR, builtin_is_sexpr);
 }
