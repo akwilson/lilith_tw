@@ -23,6 +23,7 @@
 #define BUILTIN_SYM_PRINT "print"
 #define BUILTIN_SYM_ERROR "error"
 #define BUILTIN_SYM_READ "read"
+#define BUILTIN_SYM_ENV "env"
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

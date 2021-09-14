@@ -730,6 +730,17 @@ static lval *builtin_error(lenv *env, lval *val)
     return err;
 }
 
+/**
+ * Built-in function to return the environment in a q-expression.
+ */
+static lval *builtin_env(lenv *env, lval *val)
+{
+    LASSERT_ENV(val, env, BUILTIN_SYM_ENV);
+
+    lval_del(val);
+    return lenv_to_lval(env);
+}
+
 static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
 {
     lval *k = lval_symbol(name);
@@ -774,4 +785,5 @@ void lenv_add_builtins(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_PRINT, builtin_print);
     lenv_add_builtin(e, BUILTIN_SYM_ERROR, builtin_error);
     lenv_add_builtin(e, BUILTIN_SYM_READ, builtin_read);
+    lenv_add_builtin(e, BUILTIN_SYM_ENV, builtin_env);
 }

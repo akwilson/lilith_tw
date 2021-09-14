@@ -202,14 +202,14 @@ bool lenv_def(lenv *e, lval *k, lval *v);
 void lenv_add_builtins(lenv *e);
 
 /**
- * Print the environment.
- */
-void lenv_print(lenv *e);
-
-/**
  * Performs a deep copy of the environment.
  */
 lenv *lenv_copy(lenv *e);
+
+/**
+ * Converts an lenv to an lval.
+ */
+lval *lenv_to_lval(lenv *env);
 
 /**
  * Convert a type in to a user-friendly name.

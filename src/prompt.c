@@ -116,10 +116,6 @@ int main(int argc, char *argv[])
             {
                 running = 0;
             }
-            else if (strcmp(input, "env") == 0)
-            {
-                lenv_print(env);
-            }
             else if (mpc_parse("<stdin>", input, lilith_p, &parse_result))
             {
                 lval *result = lval_eval(env, lval_read(parse_result.output));

@@ -130,16 +130,6 @@ bool lenv_def(lenv *e, lval *k, lval *v)
     return lenv_put(e, k, v);
 }
 
-void lenv_print(lenv *e)
-{
-    for (int i = 0; i < e->count; i++)
-    {
-        printf("%s : ", e->symbols[i]);
-        lval_print(e->values[i]->value);
-        putchar('\n');
-    }
-}
-
 lenv *lenv_copy(lenv *e)
 {
     lenv *rv = malloc(sizeof(lenv));
@@ -160,4 +150,18 @@ lenv *lenv_copy(lenv *e)
     }
 
     return rv; 
+}
+
+lval *lenv_to_lval(lenv *env)
+{
+    lval *rv = lval_qexpression();
+    for (int i = 0; i < env->count; i++)
+    {
+        lval *pair = lval_qexpression();
+        lval_add(pair, lval_string(env->symbols[i]));
+        lval_add(pair, lval_copy(env->values[i]->value));
+        lval_add(rv, pair);
+    }
+
+    return rv;
 }
