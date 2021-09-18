@@ -173,11 +173,16 @@
 
 ; Test a value and return a message if it does not match.
 (defun {assert n f err m}
-  {if (= f err)
-    {#t}
+  {let
     {do
-      (print (join "  " n ": " m))
-      (#f)
+      (put {f_res} (f))
+      (if (= f_res err)
+        {#t}
+        {do
+          (print (join "  " n ": " m ". Expected ") err " actual " f_res)
+          (#f)
+        }
+      )
     }
   }
 )
