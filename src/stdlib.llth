@@ -168,3 +168,38 @@
     }
   }
 )
+
+;; Unit testing ---------------------------------------------------------------
+
+; Test a value and return a message if it does not match.
+(defun {assert n f err m}
+  {if (= f err)
+    {#t}
+    {do
+      (print (join "  " n ": " m))
+      (#f)
+    }
+  }
+)
+
+; Executes a series of tests and prints out a
+; summary of those succeeding and failing.
+(defun {deftest x asserts}
+  {let
+    {do
+      (put {runner}
+        (\ {oks l}
+          {if (nil? l)
+            {oks}
+            {if (fst l)
+              {runner (+ 1 oks) (tail l)}
+              {runner oks (tail l)}
+            }
+          }
+        )
+      )
+      (put {test_ok} (runner 0 asserts))
+      (print x "Succeeded:" test_ok "Failed:" (- (len asserts) test_ok))
+    }
+  }
+)

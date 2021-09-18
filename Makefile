@@ -1,4 +1,4 @@
-SUBDIRS = src test
+SUBDIRS = src
 
 SUBCLEAN = $(addsuffix .cln, $(SUBDIRS))
 
@@ -20,4 +20,4 @@ install : src
 	$(MAKE) install -C src --no-print-directory
 
 tests : test
-	@$(MAKE) tests -C test --no-print-directory
+	src/build/lilith test/test_builtins.llth

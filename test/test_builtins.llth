@@ -1,0 +1,91 @@
+(load "src/stdlib.llth")
+
+;; Test built-ins -------------------------------------------------------------
+
+(deftest "Arithmetic"
+  {
+    (assert "Add integers" (+ 10 2) 12 "cannot add numbers")
+    (assert "Add to decimal" (+ 10 2.0) 12.0 "cannot add numbers to decimal")
+    (assert "Add decimals" (+ 10.5 2.1) 12.6 "cannot add decimals")
+    (assert "Subtract" (- 10 2) 8 "cannot subtract numbers")
+    (assert "Multiply" (* 10 2) 20 "cannot multiply numbers")
+    (assert "Divide" (/ 10 2) 5.5 "cannot divide numbers")
+    (assert "Modulo" (% 10 9) 1 "cannot modulo numbers")
+  }
+)
+
+(deftest "Lists"
+  {
+    (assert "Head q-expr" (head {1 2 3 4 5}) {1} "cannot head a q-expression")
+    (assert "Head string" (head "expression") "e" "cannot head a string")
+    
+    (assert "Tail q-expr" (tail {1 2 3 4 5}) {2 3 4 5} "cannot tail a q-expression")
+    (assert "Tail string" (tail "expression") "xpression" "cannot tail a string")
+    
+    (assert "Join q-expr" (join {1 2 3} {4 5}) {1 2 3 4 5} "cannot join q-expressions")
+    (assert "Join string" (join "ex" "pression") "expression" "cannot join strings")
+    
+    (assert "List" (list 1 2 3 4) {1 2 3 4} "cannot build a q-expression")
+    (assert "List with fn" (list + 1 2 3 4) {+ 1 2 3 4} "cannot build a q-expression with a function")
+    
+    (assert "Length q-expr" (len {1 2 3 4}) 4 "cannot get length of q-expression")
+    (assert "Length string" (len "expression") 10 "cannot get length of string")
+    
+    (assert "Evaluate" (eval {+ 1 2 3 4}) 10 "cannot evaluate q-expression")
+    
+    (assert "Cons" (cons 1 {2 3 4}) {1 2 3 4} "cannot cons value with q-expression")
+  }
+)
+
+(deftest "Logical Operators"
+  {
+    (assert "Not 1" (not #t) #f "Cannot not true")
+    (assert "Not 2" (not #f) #t "Cannot not false")
+    
+    (assert "And 1" (and #f #f) #f "Cannot and 0 0")
+    (assert "And 2" (and #f #t) #f "Cannot and 0 1")
+    (assert "And 3" (and #t #f) #f "Cannot and 1 0")
+    (assert "And 4" (and #t #t) #t "Cannot and 1 1")
+    
+    (assert "Or 1" (or #f #f) #f "Cannot or 0 0")
+    (assert "Or 2" (or #f #t) #t "Cannot or 0 1")
+    (assert "Or 3" (or #t #f) #t "Cannot or 1 0")
+    (assert "Or 4" (or #t #t) #t "Cannot or 1 1")
+  }
+)
+
+(deftest "Type Checking"
+  {   
+    (assert "Check string" (string? "expression") #t "Cannot identify a string")
+    (assert "Check not string" (string? 0) #f "Cannot identify not a string")
+    
+    (assert "Check number" (number? 100) #t "Cannot identify a number")
+    (assert "Check not number" (number? 0.1) #f "Cannot identify not a number")
+    
+    (assert "Check decimal" (decimal? 10.0) #t "Cannot identify a decimal")
+    (assert "Check not decimal" (decimal? {}) #f "Cannot identify not a decimal")
+    
+    (assert "Check boolean" (boolean? #t) #t "Cannot identify a boolean")
+    (assert "Check not boolean" (boolean? {}) #f "Cannot identify not a boolean")
+    
+    (assert "Check q-expr" (q-expression? {1 2 3}) #t "Cannot identify a q-expression")
+    (assert "Check not q-expr" (q-expression? "expression") #f "Cannot identify not a q-expression")
+  }
+)
+
+(deftest "Compound Tests"
+  {
+    (assert "Combination"
+      (eval ((join (head {* 34 76 98}) (tail {+ 10 20 30}))))
+      6000 "bad combination result")
+    
+    (assert "Eval / cons"
+      (eval(cons + {45 65 56 234 75 234}))
+      709 "bad combination result")
+    
+    (assert "Read"
+      (eval (read "eval ((join (head {* 34 76 98}) (tail {+ 10 20 30})))"))
+      6000 "bad read result")
+  }
+)
+    

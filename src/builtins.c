@@ -700,9 +700,7 @@ static lval *builtin_read(lenv *env, lval *val)
  */
 static lval *builtin_print(lenv *env, lval *val)
 {
-    LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
-    LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LOAD);
-    LASSERT_TYPE_ARG(val, 0, LVAL_STRING, BUILTIN_SYM_LOAD);
+    LASSERT_ENV(val, env, BUILTIN_SYM_PRINT);
 
     for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
     {
