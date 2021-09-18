@@ -172,14 +172,14 @@
 ;; Unit testing ---------------------------------------------------------------
 
 ; Test a value and return a message if it does not match.
-(defun {assert n f err m}
+(defun {assert name f expected msg}
   {let
     {do
-      (put {f_res} (f))
-      (if (= f_res err)
+      (put {res} (f))
+      (if (= res expected)
         {#t}
         {do
-          (print (join "  " n ": " m ". Expected ") err " actual " f_res)
+          (print (join "  " name ": " msg ". Expected ") expected " actual " res)
           (#f)
         }
       )
