@@ -9,6 +9,7 @@
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
+char *lookup_load_file(const char *filename);
 extern mpc_parser_t *lilith_p;
 
 /*
@@ -657,19 +658,29 @@ static lval *builtin_load(lenv *env, lval *val)
     LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
     LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LOAD);
 
-    mpc_result_t result;
-    if (mpc_parse_contents(LVAL_EXPR_ITEM(val, 0)->value.string, lilith_p, &result))
+    lval *rv;
+    char *fn = lookup_load_file(LVAL_EXPR_ITEM(val, 0)->value.string);
+    if (!fn)
     {
-        parser_eval(env, &result);
-        lval_del(val);
-        return lval_sexpression();
+        rv = lval_error("File not found %s", LVAL_EXPR_ITEM(val, 0)->value.string);
     }
     else
     {
-        lval *err = parser_error(&result, BUILTIN_SYM_LOAD);
-        lval_del(val);
-        return err;
+        mpc_result_t result;
+        if (mpc_parse_contents(fn, lilith_p, &result))
+        {
+            parser_eval(env, &result);
+            rv = lval_sexpression();
+        }
+        else
+        {
+            rv = parser_error(&result, BUILTIN_SYM_LOAD);
+        }
     }
+
+    free(fn);
+    lval_del(val);
+    return rv;
 }
 
 /**

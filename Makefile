@@ -20,4 +20,4 @@ install : src
 	$(MAKE) install -C src --no-print-directory
 
 tests : test
-	src/build/lilith test/test_builtins.llth
+	LILITH_PATH=src src/build/lilith test/test_builtins.llth

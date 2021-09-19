@@ -1,4 +1,4 @@
-(load "src/stdlib.llth")
+(load "stdlib.llth")
 
 ;; Test built-ins -------------------------------------------------------------
 
