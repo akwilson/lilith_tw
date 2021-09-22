@@ -68,6 +68,9 @@ char *lookup_load_file(const char *filename)
     return 0;
 }
 
+/**
+ * Loads the statically linked Lilith standard library in to the environment.
+ */
 lval *load_std_lib(lenv *env)
 {
 #ifdef __linux
