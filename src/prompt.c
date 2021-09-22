@@ -11,6 +11,7 @@
 #include "builtin_symbols.h"
 
 mpc_parser_t *lilith_p;
+lval *load_std_lib(lenv *env);
 
 static void load_and_eval_from_file(lenv *env, const char *filename)
 {
@@ -72,6 +73,13 @@ int main(int argc, char *argv[])
 
     lenv *env = lenv_new();
     lenv_add_builtins(env);
+    lval *x = load_std_lib(env);
+    if (x->type == LVAL_ERROR)
+    {
+        printf("Error reading standard library. ");
+        lval_println(x);
+        return 1;
+    }
 
     if (argc > 1)
     {

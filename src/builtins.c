@@ -9,8 +9,10 @@
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
-char *lookup_load_file(const char *filename);
 extern mpc_parser_t *lilith_p;
+char *lookup_load_file(const char *filename);
+lval *parser_eval(lenv *env, const mpc_result_t* result);
+lval *parser_error(const mpc_result_t* result, const char *symbol);
 
 /*
  * Error checking macros.
@@ -613,44 +615,6 @@ static lval *builtin_if(lenv *env, lval *val)
 }
 
 /**
- * Evaluates all of the expressions in a parsed result.
- */
-static void parser_eval(lenv *env, const mpc_result_t* result)
-{
-    // Read contents of file
-    lval *expr = lval_read(result->output);
-    mpc_ast_delete(result->output);
-
-    // Evaluate each expression
-    while (LVAL_EXPR_CNT(expr))
-    {
-        lval *x = lval_eval(env, lval_pop(expr, 0));
-        if (x->type == LVAL_ERROR)
-        {
-            lval_println(x);
-        }
-
-        lval_del(x);
-    }
-
-    // Delete expressions and arguments
-    lval_del(expr);
-}
-
-/**
- * Handle parse errors -- return as an lval_error().
- */
-static lval *parser_error(const mpc_result_t* result, const char *symbol)
-{
-    char *err_msg = mpc_err_string(result->error);
-    mpc_err_delete(result->error);
-
-    lval *err = lval_error("function '%s' failed %s", symbol, err_msg);
-    free(err_msg);
-    return err;
-}
-
-/**
  * Loads and evaluates lilith code from a file. Filename specified in val.
  */
 static lval *builtin_load(lenv *env, lval *val)
@@ -669,8 +633,7 @@ static lval *builtin_load(lenv *env, lval *val)
         mpc_result_t result;
         if (mpc_parse_contents(fn, lilith_p, &result))
         {
-            parser_eval(env, &result);
-            rv = lval_sexpression();
+            rv = parser_eval(env, &result);
         }
         else
         {
@@ -798,6 +761,46 @@ static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
     lenv_put_builtin(env, k, v);
     lval_del(k);
     lval_del(v);
+}
+
+/**
+ * Evaluates all of the expressions in a parsed result.
+ */
+lval *parser_eval(lenv *env, const mpc_result_t* result)
+{
+    // Read contents of file
+    lval *expr = lval_read(result->output);
+    mpc_ast_delete(result->output);
+
+    // Evaluate each expression
+    while (LVAL_EXPR_CNT(expr))
+    {
+        lval *x = lval_eval(env, lval_pop(expr, 0));
+        if (x->type == LVAL_ERROR)
+        {
+            lval_del(expr);
+            return x;
+        }
+
+        lval_del(x);
+    }
+
+    // Delete expressions and arguments
+    lval_del(expr);
+    return lval_sexpression();
+}
+
+/**
+ * Handle parse errors -- return as an lval_error().
+ */
+lval *parser_error(const mpc_result_t* result, const char *symbol)
+{
+    char *err_msg = mpc_err_string(result->error);
+    mpc_err_delete(result->error);
+
+    lval *err = lval_error("function '%s' failed %s", symbol, err_msg);
+    free(err_msg);
+    return err;
 }
 
 lval *call_builtin(lenv *env, char *symbol, lval *val)
