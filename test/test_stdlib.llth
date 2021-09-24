@@ -1,0 +1,79 @@
+;; Test Lilith Standard Library Functions -------------------------------------
+
+(deftest "Currying"
+  {
+    (assert "Curry a function" (curry + {1 2 3 4}) 10 "should call + with 1 2 3 4")
+    (assert "Uncurry a function" (uncurry head 1 2 3 4) {1} "should call head with 1 2 3 4")
+  }
+)
+
+(deftest "List Processing"
+  {
+    (assert "First item" (fst {1 2 3 4 5}) 1 "should return the first item in a list")
+    (assert "Second item" (snd {1 2 3 4 5}) 2 "should return the second item in a list")
+    (assert "Third item" (trd {1 2 3 4 5}) 3 "should return the third item in a list")
+    (assert "Nth item" (nth 3 {1 2 3 4 5}) 4 "should return the fourth item in a list")
+    (assert "Last item" (last {1 2 3 4 5}) 5 "should return the last item in a list")
+
+    (assert "Map list" (map (\ {x} {* x 2}) {1 2 3 4 5}) {2 4 6 8 10} "each item should be X2")
+    (assert "Filter list" (filter even? {1 2 3 4 5}) {2 4} "odd items should be excluded")
+    (assert "Fold list" (foldl (\ {x y} {+ x y}) 0 {1 2 3 4 5}) 15 "List items should be summed")
+
+    (assert "Sum list" (sum {1 2 3 4 5}) 15 "Items should be summed")
+    (assert "List product" (product {1 2 3 4 5}) 120 "Items should be muliplied together")
+    (assert "List length" (length {1 2 3 4 5}) 5 "Items should be counted")
+
+    (assert "Take list" (take 3 {1 2 3 4 5}) {1 2 3} "First three list items")
+    (assert "Drop list" (drop 2 {1 2 3 4 5}) {3 4 5} "Last three items returned")
+    (assert "Split list" (split 2 {1 2 3 4 5}) {{1 2} {3 4 5}} "List should be split in to two")
+  }
+)
+
+(defun {card-num i}
+  {select
+    {(= i 0) "ace"}
+    {(= i 11) "jack"}
+    {(= i 12) "queen"}
+    {(= i 13) "king"}
+    {otherwise i}
+  }
+)
+
+(deftest "Select"
+  {
+    (assert "Select 1" (card-num 0) "ace" "0 = ace")
+    (assert "Select 2" (card-num 10) 10 "10 = 10")
+    (assert "Select 3" (card-num 11) "jack" "11 = jack")
+    (assert "Select 4" (card-num 12) "queen" "12 = queen")
+    (assert "Select 5" (card-num 13) "king" "13 = king")
+  }
+)
+
+(defun {day-name x}
+  {case x
+    {0 "Monday"}
+    {1 "Tuesday"}
+    {2 "Wednesday"}
+    {3 "Thursday"}
+    {4 "Friday"}
+    {5 "Saturday"}
+    {6 "Sunday"}
+  }
+)
+
+(deftest "Case"
+  {
+    (assert "Case 1" (day-name 0) "Monday" "Monday is the first day of the week")
+    (assert "Case 2" (day-name 3) "Thursday" "Thursday is the fourth day of the week")
+    (assert "Case 3" (day-name 6) "Sunday" "Sunday is the seventh day of the week")
+    ;(assert "Case 4" (day-name 99) "Error: no case found" "Error condition")
+  }
+)
+
+(deftest "Utilities"
+  {
+    (assert "Flip args" (flip - 10 2) -8 "Arguments should be reversed")
+    (assert "Member" (member? 3 {1 2 3 4 5}) #t "3 is in the list")
+    (assert "Member" (member? 9 {1 2 3 4 5}) #f "9 is not in the list")
+  }
+)

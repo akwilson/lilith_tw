@@ -179,7 +179,7 @@
       (if (= res expected)
         {#t}
         {do
-          (print (join "  " name ": " msg ". Expected ") expected " actual " res)
+          (print (join "  " name ": " msg ". Expected") expected "actual" res)
           (#f)
         }
       )
