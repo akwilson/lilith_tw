@@ -7,7 +7,7 @@
     (assert "Add decimals" (+ 10.5 2.1) 12.6 "cannot add decimals")
     (assert "Subtract" (- 10 2) 8 "cannot subtract numbers")
     (assert "Multiply" (* 10 2) 20 "cannot multiply numbers")
-    (assert "Divide" (/ 10 2) 5.5 "cannot divide numbers")
+    (assert "Divide" (/ 10 4) 2.5 "cannot divide numbers")
     (assert "Modulo" (% 10 9) 1 "cannot modulo numbers")
   }
 )
@@ -24,7 +24,7 @@
     (assert "Join string" (join "ex" "pression") "expression" "cannot join strings")
     
     (assert "List" (list 1 2 3 4) {1 2 3 4} "cannot build a q-expression")
-    (assert "List with fn" (list + 1 2 3 4) {+ 1 2 3 4} "cannot build a q-expression with a function")
+    (assert "List with fn" (eval (list + 1 2 3 4)) 10 "cannot build a q-expression with a function")
     
     (assert "Length q-expr" (len {1 2 3 4}) 4 "cannot get length of q-expression")
     (assert "Length string" (len "expression") 10 "cannot get length of string")

@@ -56,7 +56,7 @@ static lval *sub_l(long x, long y) { return lval_long(x - y); }
 static lval *sub_d(double x, double y) { return lval_double(x - y); }
 static lval *mul_l(long x, long y) { return lval_long(x * y); }
 static lval *mul_d(double x, double y) { return lval_double(x * y); }
-static lval *div_l(long x, long y) { return y == 0 ? lval_error("divide by zero") : lval_long(x / y); }
+static lval *div_l(long x, long y) { return y == 0 ? lval_error("divide by zero") : lval_double(x / (double)y); }
 static lval *div_d(double x, double y) { return y == 0.0 ? lval_error("divide by zero") : lval_double(x / y); }
 static lval *max_l(long x, long y) { return lval_long(x > y ? x : y); }
 static lval *max_d(double x, double y) { return lval_double(x > y ? x : y); }
