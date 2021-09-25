@@ -3,16 +3,13 @@
  * a computed goto to dispatch the operation.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
-extern mpc_parser_t *lilith_p;
 char *lookup_load_file(const char *filename);
-lval *parser_eval(lenv *env, const mpc_result_t* result);
-lval *parser_error(const mpc_result_t* result, const char *symbol);
+lval *multi_eval(lenv *env, lval *expr);
+lval *read_from_string(const char *input);
 
 /*
  * Error checking macros.
@@ -622,7 +619,7 @@ static lval *builtin_load(lenv *env, lval *val)
     LASSERT_ENV(val, env, BUILTIN_SYM_LOAD);
     LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_LOAD);
 
-    lval *rv;
+    lval *rv = 0;
     char *fn = lookup_load_file(LVAL_EXPR_ITEM(val, 0)->value.string);
     if (!fn)
     {
@@ -630,18 +627,11 @@ static lval *builtin_load(lenv *env, lval *val)
     }
     else
     {
-        mpc_result_t result;
-        if (mpc_parse_contents(fn, lilith_p, &result))
-        {
-            rv = parser_eval(env, &result);
-        }
-        else
-        {
-            rv = parser_error(&result, BUILTIN_SYM_LOAD);
-        }
+        lval *expr = read_from_string(fn);
+        rv = multi_eval(env, expr);
+        free(fn);
     }
 
-    free(fn);
     lval_del(val);
     return rv;
 }
@@ -654,19 +644,15 @@ static lval *builtin_read(lenv *env, lval *val)
     LASSERT_ENV(val, env, BUILTIN_SYM_READ);
     LASSERT_NUM_ARGS(val, 1, BUILTIN_SYM_READ);
 
-    mpc_result_t result;
-    if (mpc_parse("<string>", LVAL_EXPR_ITEM(val, 0)->value.string, lilith_p, &result))
+    lval *expr = read_from_string(LVAL_EXPR_ITEM(val, 0)->value.string);
+    if (expr->type == LVAL_ERROR)
     {
-        lval *rv = lval_add(lval_qexpression(), lval_read(result.output));
-        lval_del(val);
-        return rv;
+        return expr;
     }
-    else
-    {
-        lval *err = parser_error(&result, BUILTIN_SYM_READ);
-        lval_del(val);
-        return err;
-    }
+
+    lval *rv = lval_add(lval_qexpression(), expr);
+    lval_del(val);
+    return rv;
 }
 
 /**
@@ -766,12 +752,8 @@ static void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
 /**
  * Evaluates all of the expressions in a parsed result.
  */
-lval *parser_eval(lenv *env, const mpc_result_t* result)
+lval *multi_eval(lenv *env, lval *expr)
 {
-    // Read contents of file
-    lval *expr = lval_read(result->output);
-    mpc_ast_delete(result->output);
-
     // Evaluate each expression
     while (LVAL_EXPR_CNT(expr))
     {
@@ -788,19 +770,6 @@ lval *parser_eval(lenv *env, const mpc_result_t* result)
     // Delete expressions and arguments
     lval_del(expr);
     return lval_sexpression();
-}
-
-/**
- * Handle parse errors -- return as an lval_error().
- */
-lval *parser_error(const mpc_result_t* result, const char *symbol)
-{
-    char *err_msg = mpc_err_string(result->error);
-    mpc_err_delete(result->error);
-
-    lval *err = lval_error("function '%s' failed %s", symbol, err_msg);
-    free(err_msg);
-    return err;
 }
 
 lval *call_builtin(lenv *env, char *symbol, lval *val)

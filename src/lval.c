@@ -2,9 +2,11 @@
  * Functions for reading, constructing and printing Lisp Values.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdarg.h>
 #include "lilith_int.h"
+
+bool is_escapable(char x);
+char *char_escape(char x);
 
 static void lval_expr_print(const lval *v, char open, char close)
 {
@@ -26,46 +28,21 @@ static void lval_expr_print(const lval *v, char open, char close)
 
 static void lval_print_string(const lval *str_val)
 {
-    char *escaped = malloc(strlen(str_val->value.string) + 1);
-    strcpy(escaped, str_val->value.string);
-    escaped = mpcf_escape(escaped);
-    printf("\"%s\"", escaped);
-    free(escaped);
-}
+    putchar('"');
+    int len = strlen(str_val->value.string);
+    for (int i = 0; i < len; i++)
+    {
+        if (is_escapable(str_val->value.string[i]))
+        {
+            printf("%s", char_escape(str_val->value.string[i]));
+        }
+        else
+        {
+            putchar(str_val->value.string[i]);
+        }
+    }
 
-/**
- * Reads a long value from an AST.
- */
-static lval *lval_read_long(const mpc_ast_t *tree)
-{
-    errno = 0;
-    long num = strtol(tree->contents, NULL, 10);
-    return errno != ERANGE ? lval_long(num) : lval_error("invalid number: %s", tree->contents);
-}
-
-/**
- * Reads a double value from an AST.
- */
-static lval *lval_read_double(const mpc_ast_t *tree)
-{
-    errno = 0;
-    double num = strtod(tree->contents, NULL);
-    return errno != ERANGE ? lval_double(num) : lval_error("invalid decimal: %s", tree->contents);
-}
-
-/**
- * Reads a string from an AST. Unescapes the contents of the
- * string (/n, /t) etc. Also removes "" from start and end.
- */
-static lval *lval_read_str(const mpc_ast_t *tree)
-{
-    tree->contents[strlen(tree->contents) - 1] = '\0';
-    char *unescaped = malloc(strlen(tree->contents + 1) + 1);
-    strcpy(unescaped, tree->contents + 1);
-    unescaped = mpcf_unescape(unescaped);
-    lval *str = lval_string(unescaped);
-    free(unescaped);
-    return str;
+    putchar('"');
 }
 
 lval *lval_pop(lval *val, int i)
@@ -202,64 +179,6 @@ lval *lval_add(lval *v, lval *x)
     v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
     v->value.list.cell[v->value.list.count - 1] = x;
     return v;
-}
-
-lval *lval_read(const mpc_ast_t *tree)
-{
-    // If Symbol or Number return conversion to that type
-    if (strstr(tree->tag, "number"))
-    {
-        return lval_read_long(tree);
-    }
-
-    if (strstr(tree->tag, "decimal"))
-    {
-        return lval_read_double(tree);
-    }
-
-    if (strstr(tree->tag, "boolean"))
-    {
-        return lval_bool(tree->contents[1] == 't');
-    }
-
-    if (strstr(tree->tag, "string"))
-    {
-        return lval_read_str(tree);
-    }
-
-    if (strstr(tree->tag, "symbol"))
-    {
-        return lval_symbol(tree->contents);
-    }
-
-    // If root (>), sexpression or qexpression then create empty list
-    lval *x = 0;
-    if ((strcmp(tree->tag, ">") == 0) || (strstr(tree->tag, "sexpression")))
-    {
-        x = lval_sexpression();
-    }
-    else if (strstr(tree->tag, "qexpression"))
-    {
-        x = lval_qexpression();
-    }
-
-    // Fill this list with any valid expression contained within
-    for (int i = 0; i < tree->children_num; i++)
-    {
-        if ((strcmp(tree->children[i]->contents, "(") == 0) ||
-            (strcmp(tree->children[i]->contents, ")") == 0) ||
-            (strcmp(tree->children[i]->contents, "{") == 0) ||
-            (strcmp(tree->children[i]->contents, "}") == 0) ||
-            (strcmp(tree->children[i]->tag,  "regex") == 0) ||
-            (strstr(tree->children[i]->tag, "comment")))
-        {
-            continue;
-        }
-
-        x = lval_add(x, lval_read(tree->children[i]));
-    }
-
-    return x;
 }
 
 void lval_print(const lval *v)

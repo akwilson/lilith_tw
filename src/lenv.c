@@ -2,8 +2,6 @@
  * Maintains the Lisp Environment -- the function lookup table.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "lilith_int.h"
 
 typedef struct env_entry

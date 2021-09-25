@@ -78,7 +78,7 @@
       6000 "bad combination result")
     
     (assert "Eval / cons"
-      (eval(cons + {45 65 56 234 75 234}))
+      (eval (cons + {45 65 56 234 75 234}))
       709 "bad combination result")
     
     (assert "Read"

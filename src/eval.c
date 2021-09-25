@@ -2,10 +2,8 @@
  * Functions to evaluate an s-expression.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
-#include "mpc.h"
+
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
@@ -142,9 +140,10 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     lval *first = lval_pop(val, 0);
     if (first->type != LVAL_BUILTIN_FUN && first->type != LVAL_USER_FUN)
     {
+        lval *rv = lval_error("s-expression does not start with function, '%s'", ltype_name(first->type));
         lval_del(first);
         lval_del(val);
-        return lval_error("s-expression does not start with function, '%s'", ltype_name(first->type));
+        return rv;
     }
 
     // Call function

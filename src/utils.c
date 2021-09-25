@@ -5,39 +5,39 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 
-#include <lilith_int.h>
+/**
+ * Read contents of file in to a string.
+ */
+static char *load_file(const char *filename, struct stat *fn)
+{
+    char *contents = malloc(fn->st_size);
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        return 0;
+    }
 
-#ifdef __linux
-extern char _stdlib_llth_start;
-#else
-extern char stdlib_llth_start;
-#endif
-
-extern mpc_parser_t *lilith_p;
-lval *parser_eval(lenv *env, const mpc_result_t* result);
-lval *parser_error(const mpc_result_t* result, const char *symbol);
+    fread(contents, 1, fn->st_size, file);
+    return contents;
+}
 
 /**
  * Search the local directory and the LILITH_PATH for the given file name.
  * 
  * @param filename the filename to search for
- * @returns        the full name of the found filename, null if
- *                 not found. Needs to be freed by the caller.
+ * @returns        the contents of the file
  */
 char *lookup_load_file(const char *filename)
 {
-    char *check = malloc(strlen(filename) + 1);
-
     struct stat fn;
     if (stat(filename, &fn) == 0)
     {
-        strcpy(check, filename);
-        return check;
+        return load_file(filename, &fn);
     }
 
-    free(check);
     const char *lp = getenv("LILITH_PATH");
     if (lp)
     {
@@ -46,7 +46,7 @@ char *lookup_load_file(const char *filename)
         strcpy(buf, lp);
 
         char *end;
-        check = malloc(strlen(lp) + strlen(filename) + 3);
+        char *check = malloc(strlen(lp) + strlen(filename) + 3);
         do
         {
             end = strchr(next, ':');
@@ -58,7 +58,9 @@ char *lookup_load_file(const char *filename)
             sprintf(check, "%s/%s", next, filename);
             if (stat(check, &fn) == 0)
             {
-                return check;
+                char *contents = load_file(check, &fn);
+                free(check);
+                return contents;
             }
 
             next = end + 1;
@@ -69,23 +71,63 @@ char *lookup_load_file(const char *filename)
 }
 
 /**
- * Loads the statically linked Lilith standard library in to the environment.
+ * Identifies an un-escapable character.
  */
-lval *load_std_lib(lenv *env)
+bool is_unescapable(char x)
 {
-#ifdef __linux
-    char *stdlib = &_stdlib_llth_start;
-#else
-    char *stdlib = &stdlib_llth_start;
-#endif
+    static char *unescapable = "abfnrtv\\\'\"";
+    return strchr(unescapable, x);
+}
 
-    mpc_result_t result;
-    if (mpc_parse("<string>", stdlib, lilith_p, &result))
+/**
+ * Unescapes a given character. Shrinks an escaped '\t, '\n' etc into a single character.
+ */
+char char_unescape(char x)
+{
+    switch (x)
     {
-        return parser_eval(env, &result);
+        case 'a':  return '\a';
+        case 'b':  return '\b';
+        case 'f':  return '\f';
+        case 'n':  return '\n';
+        case 'r':  return '\r';
+        case 't':  return '\t';
+        case 'v':  return '\v';
+        case '\\': return '\\';
+        case '\'': return '\'';
+        case '\"': return '\"';
     }
-    else
+
+    return 0;
+}
+
+/**
+ * Identifies an escapable character.
+ */
+bool is_escapable(char x)
+{
+    static char *escapable = "\a\b\f\n\r\t\v\\\'\"";
+    return strchr(escapable, x);
+}
+
+/**
+ * Escape given character. Expands '\t', '\n' etc to two character string of the expanded value.
+ */
+char *char_escape(char x)
+{
+    switch (x)
     {
-        return parser_error(&result, "load_std_lib");
+        case '\a': return "\\a";
+        case '\b': return "\\b";
+        case '\f': return "\\f";
+        case '\n': return "\\n";
+        case '\r': return "\\r";
+        case '\t': return "\\t";
+        case '\v': return "\\v";
+        case '\\': return "\\\\";
+        case '\'': return "\\\'";
+        case '\"': return "\\\"";
     }
+
+    return "";
 }

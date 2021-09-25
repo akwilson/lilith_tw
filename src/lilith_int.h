@@ -1,7 +1,9 @@
 #pragma once
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
-#include "mpc.h"
 
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
 #define LVAL_EXPR_LST(arg) arg->value.list.cell
@@ -130,11 +132,6 @@ lval *lval_lambda(lval *formals, lval* body);
  * Adds an lval to an s-expression.
  */
 lval *lval_add(lval *v, lval *x);
-
-/**
- * Converts an AST in to a hierarchy of lval nodes.
- */
-lval *lval_read(const mpc_ast_t *tree);
 
 /**
  * Prints the contents of an lval to the screen.
