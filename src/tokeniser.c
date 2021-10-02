@@ -104,7 +104,7 @@ static const int state_machine_rows = 23;
  */
 static CHAR_TYPE get_char_type(char c)
 {
-    if (isnumber(c))
+    if (isdigit(c))
     {
         return CHAR_NUMBER;
     }

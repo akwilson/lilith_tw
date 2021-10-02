@@ -435,9 +435,9 @@ static lval *builtin_cons(lenv *env, lval *val)
 
     lval *rv = lval_qexpression();
     rv = lval_add(rv, lval_pop(val, 0));
-    while (LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 1)))
+    while (LVAL_EXPR_CNT(LVAL_EXPR_ITEM(val, 0)))
     {
-        rv = lval_add(rv, lval_pop(LVAL_EXPR_ITEM(val, 1), 0));
+        rv = lval_add(rv, lval_pop(LVAL_EXPR_ITEM(val, 0), 0));
     }
     
     lval_del(val);

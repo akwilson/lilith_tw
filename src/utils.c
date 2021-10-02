@@ -13,7 +13,7 @@
  */
 static char *load_file(const char *filename, struct stat *fn)
 {
-    char *contents = malloc(fn->st_size);
+    char *contents = malloc(fn->st_size + 1);
     FILE *file = fopen(filename, "r");
     if (!file)
     {
@@ -21,6 +21,7 @@ static char *load_file(const char *filename, struct stat *fn)
     }
 
     fread(contents, 1, fn->st_size, file);
+    *(contents + fn->st_size) = 0;
     return contents;
 }
 
