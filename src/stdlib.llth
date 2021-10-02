@@ -169,6 +169,17 @@
   }
 )
 
+; Calls a function with an argument
+(defun {apply f a} {f a})
+
+; Threading operator, pass first parameter through a sequence of functions
+(defun {-> x & xs}
+  {if (nil? xs)
+    {x}
+    {unpack -> (join (list (apply (eval (fst xs)) x)) (tail xs))}
+  }
+)
+
 ;; Unit testing ---------------------------------------------------------------
 
 ; Test a value and return a message if it does not match.

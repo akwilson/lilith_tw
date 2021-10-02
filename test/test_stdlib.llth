@@ -75,5 +75,10 @@
     (assert "Flip args" (flip - 10 2) -8 "Arguments should be reversed")
     (assert "Member" (member? 3 {1 2 3 4 5}) #t "3 is in the list")
     (assert "Member" (member? 9 {1 2 3 4 5}) #f "9 is not in the list")
+    (assert "Threading" (-> {1 2 3 4 5}
+                            {filter (\ {x} {odd? x})}
+                            {map (\ {x} {* 10 x})}
+                            {sum})
+                        90 "Thread chain operator")
   }
 )
