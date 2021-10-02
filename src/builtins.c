@@ -210,7 +210,7 @@ static lval *builtin_or(lenv *env, lval *val)
     {
         LASSERT(val, LVAL_EXPR_ITEM(val, i)->type == LVAL_BOOL,
             "function '%s' type mismatch - expected %s, received %s",
-            BUILTIN_SYM_OR, LVAL_BOOL, ltype_name(LVAL_EXPR_ITEM(val, i)->type));
+            BUILTIN_SYM_OR, ltype_name(LVAL_BOOL), ltype_name(LVAL_EXPR_ITEM(val, i)->type));
     }
 
     bool rv = false;
