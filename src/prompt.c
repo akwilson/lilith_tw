@@ -42,7 +42,7 @@ static void load_and_eval_from_file(lenv *env, const char *filename)
 
 static void version()
 {
-    printf("Lilith Lisp v0.1.0\n");
+    printf("Lilith Lisp v0.2.0\n");
 }
 
 static void usage()
