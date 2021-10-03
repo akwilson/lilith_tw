@@ -15,6 +15,8 @@
     (assert "Nth item" (nth 3 {1 2 3 4 5}) 4 "should return the fourth item in a list")
     (assert "Last item" (last {1 2 3 4 5}) 5 "should return the last item in a list")
 
+    (assert "Range" (range 0 10) {0 1 2 3 4 5 6 7 8 9} "should build a list of 0 to 9")
+
     (assert "Map list" (map (\ {x} {* x 2}) {1 2 3 4 5}) {2 4 6 8 10} "each item should be X2")
     (assert "Filter list" (filter even? {1 2 3 4 5}) {2 4} "odd items should be excluded")
     (assert "Fold list" (foldl (\ {x y} {+ x y}) 0 {1 2 3 4 5}) 15 "List items should be summed")

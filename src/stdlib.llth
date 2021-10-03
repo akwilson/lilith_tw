@@ -54,6 +54,23 @@
 (defun {snd l} { eval (head (tail l)) })
 (defun {trd l} { eval (head (tail (tail l))) })
 
+; Creates a q-expression of values between from (inclusive) and to (exclusive). 
+(defun {range from to}
+  {let
+    {do
+      (put {range-build}
+        (\ {x y sofar}
+          {if (= x y)
+            {sofar}
+            {range-build x (- y 1) (cons (- y 1) sofar)}
+          }
+        )
+      )
+      (range-build from to {})
+    }
+  }
+)
+
 ; Returns the n-th item in a list
 (defun {nth n l}
   {if (zero? n)
