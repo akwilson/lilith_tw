@@ -6,8 +6,9 @@
 #include <stdbool.h>
 
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
-#define LVAL_EXPR_LST(arg) arg->value.list.cell
-#define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
+#define LVAL_EXPR_FIRST(arg) arg->value.list.head->data
+//#define LVAL_EXPR_LST(arg) arg->value.list.cell
+//#define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
 
 struct lval;
 struct lenv;
@@ -33,12 +34,19 @@ enum
     LVAL_USER_FUN
 };
 
+typedef struct _pair
+{
+    lval *data;
+    struct _pair *next;
+} pair;
+
 /**
  * Lisp Value -- a node in an expression.
  */
 struct lval
 {
     int type;
+
     union
     {
         char *error;
@@ -52,7 +60,7 @@ struct lval
         struct
         {
             int count;
-            lval **cell;
+            pair *head;
         } list;
 
         // functions
@@ -67,12 +75,17 @@ struct lval
 };
 
 /**
- * Removes an item from an lval list.
+ * Return an item from the list.
  */
-lval *lval_pop(lval *val, int i);
+lval *lval_expr_item(lval *val, int i);
 
 /**
- * Removes an item from an lval list and deletes everything else.
+ * Remove and return the first item in the list.
+ */
+lval *lval_pop(lval *val);
+
+/**
+ * Remove an item from a list and delete the list and remaining items.
  */
 lval *lval_take(lval *val, int i);
 
@@ -194,9 +207,14 @@ bool lenv_put(lenv *e, lval *k, lval *v);
 bool lenv_def(lenv *e, lval *k, lval *v);
 
 /**
+ * Add built-in arithmetic functions to the environment.
+ */
+void lenv_add_builtins_sums(lenv *e);
+
+/**
  * Add built-in functions to the environment.
  */
-void lenv_add_builtins(lenv *e);
+void lenv_add_builtins_funcs(lenv *e);
 
 /**
  * Performs a deep copy of the environment.

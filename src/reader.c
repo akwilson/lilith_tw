@@ -150,7 +150,7 @@ lval *read_from_string(const char *input)
 
     if (rv->value.list.count == 1)
     {
-        lval *y = lval_pop(rv, 0);
+        lval *y = lval_pop(rv);
         lval_del(rv);
         rv = y;
     }

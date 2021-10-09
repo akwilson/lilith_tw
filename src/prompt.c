@@ -60,7 +60,8 @@ int main(int argc, char *argv[])
     int running = 1;
     lenv *env = lenv_new();
 
-    lenv_add_builtins(env);
+    lenv_add_builtins_sums(env);
+    lenv_add_builtins_funcs(env);
     lval *x = load_std_lib(env);
     if (x->type == LVAL_ERROR)
     {
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    lval_del(x);
+    // lval_del(x);
     if (argc > 1)
     {
         if (strcmp(argv[1], "-h") == 0)

@@ -8,19 +8,24 @@
 bool is_escapable(char x);
 char *char_escape(char x);
 
+static lval *lval_init(int type)
+{
+    lval *v = malloc(sizeof(lval));
+    v->type = type;
+    return v;
+}
+
 static void lval_expr_print(const lval *v, char open, char close)
 {
     putchar(open);
-    for (int i = 0; i < v->value.list.count; i++)
+    for (pair *ptr = v->value.list.head; ptr; ptr = ptr->next)
     {
-        // Print value contained within
-        lval_print(v->value.list.cell[i]);
-
-        // Don't print trailing space if last element
-        if (i != (v->value.list.count - 1))
+        if (ptr != v->value.list.head)
         {
             putchar(' ');
         }
+
+        lval_print(ptr->data);
     }
 
     putchar(close);
@@ -45,33 +50,53 @@ static void lval_print_string(const lval *str_val)
     putchar('"');
 }
 
-lval *lval_pop(lval *val, int i)
+lval *lval_expr_item(lval *val, int i)
 {
-    lval *x = LVAL_EXPR_ITEM(val, i);
+    int expr_item = 0;
+    for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
+    {
+        if (expr_item++ == i)
+        {
+            return ptr->data;
+        }
+    }
 
-    // Shift memory after the item at "i" over the top
-    memmove(&LVAL_EXPR_ITEM(val, i), &LVAL_EXPR_ITEM(val, i + 1),
-        sizeof(lval*) * (LVAL_EXPR_CNT(val) - i - 1));
+    return 0;
+}
 
-    // Decrease the count of items in the list
+lval *lval_pop(lval *val)
+{
+    pair *rv = val->value.list.head;
+    val->value.list.head = rv->next;
+    rv->next = 0;
     LVAL_EXPR_CNT(val)--;
 
-    // Reallocate the memory used
-    LVAL_EXPR_LST(val) = realloc(LVAL_EXPR_LST(val), sizeof(lval*) * LVAL_EXPR_CNT(val));
-    return x;
+    lval *r = rv->data;
+    free(rv);
+    return r;
 }
 
 lval *lval_take(lval *val, int i)
 {
-    lval *x = lval_pop(val, i);
-    lval_del(val);
-    return x;
+    int cnt = 0;
+    while (cnt++ < i)
+    {
+        lval_del(lval_pop(val));
+    }
+
+    lval *rv = lval_pop(val);
+
+    while (LVAL_EXPR_CNT(val))
+    {
+        lval_del(lval_pop(val));
+    }
+
+    return rv;
 }
 
 lval *lval_error(const char *fmt, ...)
 {
-    lval *v = malloc(sizeof(lval));
-    v->type = LVAL_ERROR;
+    lval *v = lval_init(LVAL_ERROR);
 
     // Create a va list and initialize it
     va_list va;
@@ -93,32 +118,28 @@ lval *lval_error(const char *fmt, ...)
 
 lval *lval_long(long num)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_LONG;
+    lval *rv = lval_init(LVAL_LONG);
     rv->value.num_l = num;
     return rv;
 }
 
 lval *lval_double(double num)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_DOUBLE;
+    lval *rv = lval_init(LVAL_DOUBLE);
     rv->value.num_d = num;
     return rv;
 }
 
 lval *lval_bool(bool bval)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_BOOL;
+    lval *rv = lval_init(LVAL_BOOL);
     rv->value.bval = bval;
     return rv;
 }
 
 lval *lval_string(const char *string)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_STRING;
+    lval *rv = lval_init(LVAL_STRING);
     rv->value.string = malloc(strlen(string) + 1);
     strcpy(rv->value.string, string);
     return rv;
@@ -126,8 +147,7 @@ lval *lval_string(const char *string)
 
 lval *lval_symbol(const char *symbol)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SYMBOL;
+    lval *rv = lval_init(LVAL_SYMBOL);
     rv->value.symbol = malloc(strlen(symbol) + 1);
     strcpy(rv->value.symbol, symbol);
     return rv;
@@ -135,34 +155,30 @@ lval *lval_symbol(const char *symbol)
 
 lval *lval_sexpression()
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_SEXPRESSION;
+    lval *rv = lval_init(LVAL_SEXPRESSION);
     rv->value.list.count = 0;
-    rv->value.list.cell = 0;
+    rv->value.list.head = 0;
     return rv;
 }
 
 lval *lval_qexpression()
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_QEXPRESSION;
+    lval *rv = lval_init(LVAL_QEXPRESSION);
     rv->value.list.count = 0;
-    rv->value.list.cell = 0;
+    rv->value.list.head = 0;
     return rv;
 }
 
 lval *lval_fun(lbuiltin function)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_BUILTIN_FUN;
+    lval *rv = lval_init(LVAL_BUILTIN_FUN);
     rv->value.builtin = function;
     return rv;
 }
 
 lval *lval_lambda(lval *formals, lval* body)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = LVAL_USER_FUN;
+    lval *rv = lval_init(LVAL_USER_FUN);
 
     // Build new environment
     rv->value.user_fun.env = lenv_new();
@@ -176,8 +192,15 @@ lval *lval_lambda(lval *formals, lval* body)
 lval *lval_add(lval *v, lval *x)
 {
     v->value.list.count++;
-    v->value.list.cell = realloc(v->value.list.cell, sizeof(lval*) * v->value.list.count);
-    v->value.list.cell[v->value.list.count - 1] = x;
+    pair **ptr = &v->value.list.head;
+    for (; *ptr; ptr = &(*ptr)->next)
+    {
+    }
+
+    pair *n = malloc(sizeof(pair));
+    n->next = 0;
+    n->data = x;
+    *ptr = n;
     return v;
 }
 
@@ -270,13 +293,16 @@ bool lval_is_equal(lval *x, lval *y)
             return false;
         }
 
-        for (int i = 0; i < LVAL_EXPR_CNT(x); i++)
+        for (pair *ptrx = x->value.list.head, *ptry = x->value.list.head;
+             ptrx && ptry;
+             ptrx = ptrx->next, ptry = ptry->next)
         {
-            if (!lval_is_equal(LVAL_EXPR_ITEM(x, i), LVAL_EXPR_ITEM(y, i)))
+            if (!lval_is_equal(ptrx->data, ptry->data))
             {
                 return 0;
             }
         }
+
         return true;
     }
 
@@ -285,6 +311,8 @@ bool lval_is_equal(lval *x, lval *y)
 
 void lval_del(lval *v)
 {
+    pair *tmp, *ptr;
+
     switch (v->type)
     {
     case LVAL_LONG:
@@ -303,12 +331,14 @@ void lval_del(lval *v)
         break;
     case LVAL_SEXPRESSION:
     case LVAL_QEXPRESSION:
-        for (int i = 0; i < v->value.list.count; i++)
+        ptr = v->value.list.head;
+        while (ptr)
         {
-            lval_del(v->value.list.cell[i]);
+            tmp = ptr;
+            ptr = ptr->next;
+            lval_del(tmp->data);
+            free(tmp);
         }
-
-        free(v->value.list.cell);
         break;
     case LVAL_USER_FUN:
         lenv_del(v->value.user_fun.env);
@@ -352,11 +382,11 @@ lval *lval_copy(lval *v)
         break;
     case LVAL_QEXPRESSION:
     case LVAL_SEXPRESSION:
-        rv->value.list.count = v->value.list.count;
-        rv->value.list.cell = malloc(sizeof(lval) * rv->value.list.count);
-        for (int i = 0; i < rv->value.list.count; i++)
+        rv->value.list.count = 0;
+        rv->value.list.head = 0;
+        for (pair *ptr = v->value.list.head; ptr; ptr = ptr->next)
         {
-            rv->value.list.cell[i] = lval_copy(v->value.list.cell[i]);
+            lval_add(rv, lval_copy(ptr->data));
         }
         break;
     case LVAL_USER_FUN:

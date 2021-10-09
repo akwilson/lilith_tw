@@ -39,7 +39,7 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
         }
 
         // Consume arguments -- bind argument to formal
-        lval *sym = lval_pop(func->value.user_fun.formals, 0);
+        lval *sym = lval_pop(func->value.user_fun.formals);
 
         // Handle special case & - bind varargs as a q-expression
         if (strcmp(sym->value.symbol, "&") == 0)
@@ -51,14 +51,14 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
             }
 
             // Next formal should be bound to remaining arguments
-            lval *nsym = lval_pop(func->value.user_fun.formals, 0);
+            lval *nsym = lval_pop(func->value.user_fun.formals);
             lenv_put(func->value.user_fun.env, nsym, call_builtin(env, BUILTIN_SYM_LIST, args));
             lval_del(nsym);
             lval_del(sym);
             break;
         }
 
-        lval *param = lval_pop(args, 0);
+        lval *param = lval_pop(args);
         lenv_put(func->value.user_fun.env, sym, param);
 
         lval_del(sym);
@@ -70,7 +70,7 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 
     // If '&' remains in formal list bind to empty list
     if (LVAL_EXPR_CNT(func->value.user_fun.formals) > 0 &&
-        strcmp(LVAL_EXPR_ITEM(func->value.user_fun.formals, 0)->value.symbol, "&") == 0)
+        strcmp(lval_expr_item(func->value.user_fun.formals, 0)->value.symbol, "&") == 0)
     {
         // Check to ensure that & is not passed invalidly
         if (LVAL_EXPR_CNT(func->value.user_fun.formals) != 2)
@@ -79,10 +79,10 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
         }
 
         // Pop and delete '&' symbol
-        lval_del(lval_pop(func->value.user_fun.formals, 0));
+        lval_del(lval_pop(func->value.user_fun.formals));
 
         // Pop next symbol and create empty list
-        lval *sym = lval_pop(func->value.user_fun.formals, 0);
+        lval *sym = lval_pop(func->value.user_fun.formals);
         lval *val = lval_qexpression();
 
         // Bind to environment and delete
@@ -110,18 +110,21 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 static lval *lval_eval_sexpr(lenv *env, lval *val)
 {
     // Evaluate children
-    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
+    for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
     {
-        LVAL_EXPR_ITEM(val, i) = lval_eval(env, LVAL_EXPR_ITEM(val, i));
+        ptr->data = lval_eval(env, ptr->data);
     }
 
     // Check for errors
-    for (int i = 0; i < LVAL_EXPR_CNT(val); i++)
+    int i = 0;
+    for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
     {
-        if (LVAL_EXPR_ITEM(val, i)->type == LVAL_ERROR)
+        if (ptr->data->type == LVAL_ERROR)
         {
             return lval_take(val, i);
         }
+
+        i++;
     }
 
     // Empty expressions
@@ -131,13 +134,15 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     }
 
     // Single expression
-    if (LVAL_EXPR_CNT(val) == 1 && (LVAL_EXPR_ITEM(val, 0)->type != LVAL_BUILTIN_FUN))
+    if (LVAL_EXPR_CNT(val) == 1 && (lval_expr_item(val, 0)->type != LVAL_BUILTIN_FUN))
     {
-        return lval_take(val, 0);
+        lval* rv = lval_pop(val);
+        lval_del(val);
+        return rv;
     }
 
     // First element must be a function
-    lval *first = lval_pop(val, 0);
+    lval *first = lval_pop(val);
     if (first->type != LVAL_BUILTIN_FUN && first->type != LVAL_USER_FUN)
     {
         lval *rv = lval_error("s-expression does not start with function, '%s'", ltype_name(first->type));
@@ -170,4 +175,27 @@ lval *lval_eval(lenv *env, lval *val)
 
     // All other lval types remain the same
     return val;
+}
+
+/**
+ * Evaluates all of the expressions in a parsed result.
+ */
+lval *multi_eval(lenv *env, lval *expr)
+{
+    // Evaluate each expression
+    while (LVAL_EXPR_CNT(expr))
+    {
+        lval *x = lval_eval(env, lval_pop(expr));
+        if (x->type == LVAL_ERROR)
+        {
+            lval_del(expr);
+            return x;
+        }
+
+        lval_del(x);
+    }
+
+    // Delete expressions and arguments
+    lval_del(expr);
+    return lval_sexpression();
 }
