@@ -91,6 +91,7 @@ lval *lval_take(lval *val, int i)
         lval_del(lval_pop(val));
     }
 
+    lval_del(val);
     return rv;
 }
 

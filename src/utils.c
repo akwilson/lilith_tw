@@ -22,6 +22,7 @@ static char *load_file(const char *filename, struct stat *fn)
 
     fread(contents, 1, fn->st_size, file);
     *(contents + fn->st_size) = 0;
+    fclose(file);
     return contents;
 }
 

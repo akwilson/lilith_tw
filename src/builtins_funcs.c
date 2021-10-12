@@ -179,6 +179,8 @@ static lval *lval_join_string(lval *x, lval *y)
     int l = strlen(x->value.string) + strlen(y->value.string) + 1;
     char str[l];
     sprintf(str, "%s%s", x->value.string, y->value.string);
+    lval_del(x);
+    lval_del(y);
     return lval_string(str);
 }
 
@@ -229,12 +231,9 @@ static lval *builtin_len(lenv *env, lval *args)
         BUILTIN_SYM_LEN, ltype_name(LVAL_EXPR_FIRST(args)->type));
 
     lval *x = lval_take(args, 0);
-    if (x->type == LVAL_QEXPRESSION)
-    {
-        return lval_long(LVAL_EXPR_CNT(x));
-    }
-
-    return lval_long(strlen(x->value.string));
+    lval *rv = x->type == LVAL_QEXPRESSION ? lval_long(LVAL_EXPR_CNT(x)) : lval_long(strlen(x->value.string));
+    lval_del(x);
+    return rv;
 }
 
 /**
@@ -331,14 +330,17 @@ static lval *builtin_if(lenv *env, lval *args)
     {
         br_true->type = LVAL_SEXPRESSION;
         rv = lval_eval(env, br_true);
+        lval_del(br_false);
     }
     else
     {
         br_false->type = LVAL_SEXPRESSION;
         rv = lval_eval(env, br_false);
+        lval_del(br_true);
     }
 
     lval_del(args);
+    lval_del(stmt);
     return rv;
 }
 
@@ -377,14 +379,19 @@ static lval *builtin_eq(lenv *env, lval *args)
     // While elements remain
     while (LVAL_EXPR_CNT(args) > 0)
     {
-        if (!lval_is_equal(x, lval_pop(args)))
+        lval *y = lval_pop(args);
+        if (!lval_is_equal(x, y))
         {
             rv = false;
+            lval_del(y);
             break;
         }
+
+        lval_del(y);
     }
 
     lval_del(args);
+    lval_del(x);
     return lval_bool(rv);
 }
 
@@ -411,8 +418,11 @@ static lval *builtin_and(lenv *env, lval *args)
         if (!x->value.bval)
         {
             rv = false;
+            lval_del(x);
             break;
         }
+
+        lval_del(x);
     }
 
     lval_del(args);
@@ -441,8 +451,11 @@ static lval *builtin_or(lenv *env, lval *args)
         if (x->value.bval)
         {
             rv = true;
+            lval_del(x);
             break;
         }
+
+        lval_del(x);
     }
 
     lval_del(args);
@@ -459,7 +472,9 @@ static lval *builtin_not(lenv *env, lval *args)
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_BOOL, BUILTIN_SYM_NOT);
 
     lval *x = lval_take(args, 0);
-    return lval_bool(!x->value.bval);
+    lval *rv = lval_bool(!x->value.bval);
+    lval_del(x);
+    return rv;
 }
 
 /**
@@ -605,7 +620,9 @@ lval *call_builtin(lenv *env, char *symbol, lval *args)
     lval *k = lval_symbol(symbol);
     lval *f = lenv_get(env, k);
     lval_del(k);
-    return f->value.builtin(env, args);
+    lval *rv = f->value.builtin(env, args);
+    lval_del(f);
+    return rv;
 }
 
 void lenv_add_builtins_funcs(lenv *e)

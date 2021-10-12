@@ -85,6 +85,8 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
     {                                                       \
         rv = DOP(xval->value.num_d, yval->value.num_d);     \
     }                                                       \
+    lval_del(xval);                                         \
+    lval_del(yval);                                         \
     return rv;
     IOPS
 #undef $

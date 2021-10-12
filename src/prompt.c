@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // lval_del(x);
+    lval_del(x);
     if (argc > 1)
     {
         if (strcmp(argv[1], "-h") == 0)
