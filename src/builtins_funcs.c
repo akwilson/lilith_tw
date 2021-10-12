@@ -1,6 +1,5 @@
 /*
- * Built-in functions providing core functionality. Uses an X macro to generate
- * a computed goto to dispatch the operation.
+ * Built-in functions providing core functionality.
  */
 
 #include <math.h>
@@ -44,7 +43,7 @@ static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lv
     for (pair *ptr = syms->value.list.head; ptr; ptr = ptr->next)
     {
         LASSERT(val, !adder(env, ptr->data, lval_expr_item(val, i + 1)),
-            "function '%s' is a built-in", ptr->data->value.symbol);
+            "function '%s' is a built-in", ptr->data->value.str_val);
         i++;
     }
 
@@ -84,7 +83,7 @@ static lval *head_qexpr(lval *args)
 static lval *head_string(lval *args)
 {
     char head[2];
-    head[0] = LVAL_EXPR_FIRST(args)->value.string[0];
+    head[0] = LVAL_EXPR_FIRST(args)->value.str_val[0];
     head[1] = 0;
     lval *rv = lval_string(head);
     lval_del(args);
@@ -112,10 +111,10 @@ static lval *builtin_head(lenv *env, lval *args)
 
 static lval *tail_string(lval *args)
 {
-    const char *str = LVAL_EXPR_FIRST(args)->value.string;
+    const char *str = LVAL_EXPR_FIRST(args)->value.str_val;
     if (strlen(str) > 1)
     {
-        lval *rv = lval_string(LVAL_EXPR_FIRST(args)->value.string + 1);
+        lval *rv = lval_string(LVAL_EXPR_FIRST(args)->value.str_val + 1);
         lval_del(args);
         return rv;
     }
@@ -176,9 +175,9 @@ static lval *lval_join_qexpr(lval *x, lval* y)
 
 static lval *lval_join_string(lval *x, lval *y)
 {
-    int l = strlen(x->value.string) + strlen(y->value.string) + 1;
+    int l = strlen(x->value.str_val) + strlen(y->value.str_val) + 1;
     char str[l];
-    sprintf(str, "%s%s", x->value.string, y->value.string);
+    sprintf(str, "%s%s", x->value.str_val, y->value.str_val);
     lval_del(x);
     lval_del(y);
     return lval_string(str);
@@ -231,7 +230,7 @@ static lval *builtin_len(lenv *env, lval *args)
         BUILTIN_SYM_LEN, ltype_name(LVAL_EXPR_FIRST(args)->type));
 
     lval *x = lval_take(args, 0);
-    lval *rv = x->type == LVAL_QEXPRESSION ? lval_long(LVAL_EXPR_CNT(x)) : lval_long(strlen(x->value.string));
+    lval *rv = x->type == LVAL_QEXPRESSION ? lval_long(LVAL_EXPR_CNT(x)) : lval_long(strlen(x->value.str_val));
     lval_del(x);
     return rv;
 }
@@ -395,7 +394,6 @@ static lval *builtin_eq(lenv *env, lval *args)
     return lval_bool(rv);
 }
 
-
 /**
  * Built-in function to 'and' a series of boolean expressions.
  */
@@ -486,10 +484,10 @@ static lval *builtin_load(lenv *env, lval *args)
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_LOAD);
 
     lval *rv = 0;
-    char *fn = lookup_load_file(LVAL_EXPR_FIRST(args)->value.string);
+    char *fn = lookup_load_file(LVAL_EXPR_FIRST(args)->value.str_val);
     if (!fn)
     {
-        rv = lval_error("File not found %s", LVAL_EXPR_FIRST(args)->value.string);
+        rv = lval_error("File not found %s", LVAL_EXPR_FIRST(args)->value.str_val);
     }
     else
     {
@@ -527,7 +525,7 @@ static lval *builtin_print(lenv *env, lval *args)
 static lval *builtin_error(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_ERROR);
-    lval *err = lval_error(LVAL_EXPR_FIRST(args)->value.string);
+    lval *err = lval_error(LVAL_EXPR_FIRST(args)->value.str_val);
     lval_del(args);
     return err;
 }
@@ -540,7 +538,7 @@ static lval *builtin_read(lenv *env, lval *args)
     LASSERT_ENV(args, env, BUILTIN_SYM_READ);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_READ);
 
-    lval *expr = read_from_string(LVAL_EXPR_FIRST(args)->value.string);
+    lval *expr = read_from_string(LVAL_EXPR_FIRST(args)->value.str_val);
     if (expr->type == LVAL_ERROR)
     {
         return expr;

@@ -26,7 +26,7 @@ static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
     {
         // If variable is found delete item at that position
         // And replace with variable supplied by user
-        if (strcmp(e->symbols[i], k->value.symbol) == 0)
+        if (strcmp(e->symbols[i], k->value.str_val) == 0)
         {
             if (e->values[i]->is_builtin)
             {
@@ -54,8 +54,8 @@ static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
     v->value = lval_copy(ee.value);
     e->values[e->count - 1] = v;
     
-    e->symbols[e->count - 1] = malloc(strlen(k->value.symbol) + 1);
-    strcpy(e->symbols[e->count - 1], k->value.symbol);
+    e->symbols[e->count - 1] = malloc(strlen(k->value.str_val) + 1);
+    strcpy(e->symbols[e->count - 1], k->value.str_val);
     return false;
 }
 
@@ -92,7 +92,7 @@ lval *lenv_get(lenv *e, lval *k)
 {
     for (int i = 0; i < e->count; i++)
     {
-        if (strcmp(e->symbols[i], k->value.symbol) == 0)
+        if (strcmp(e->symbols[i], k->value.str_val) == 0)
         {
             return lval_copy(e->values[i]->value);
         }
@@ -103,7 +103,7 @@ lval *lenv_get(lenv *e, lval *k)
         return lenv_get(e->parent, k);
     }
 
-    return lval_error("unbound symbol '%s'", k->value.symbol);
+    return lval_error("unbound symbol '%s'", k->value.str_val);
 }
 
 bool lenv_put_builtin(lenv *e, lval *k, lval *v)

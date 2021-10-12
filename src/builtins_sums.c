@@ -1,5 +1,5 @@
 /*
- * Built-in functions providing core functionality. Uses an X macro to generate
+ * Built-in functions providing arithmetic functionality. Uses an X macro to generate
  * a computed goto to dispatch the operation.
  */
 

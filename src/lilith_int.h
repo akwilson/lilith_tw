@@ -7,14 +7,15 @@
 
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
 #define LVAL_EXPR_FIRST(arg) arg->value.list.head->data
-//#define LVAL_EXPR_LST(arg) arg->value.list.cell
-//#define LVAL_EXPR_ITEM(arg, i) arg->value.list.cell[i]
 
 struct lval;
 struct lenv;
 typedef struct lval lval;
 typedef struct lenv lenv;
 
+/**
+ * Pointer to a built-in function.
+ */
 typedef lval*(*lbuiltin)(lenv*, lval*);
 
 /**
@@ -34,6 +35,9 @@ enum
     LVAL_USER_FUN
 };
 
+/**
+ * A node in an lval linked list.
+ */
 typedef struct _pair
 {
     lval *data;
@@ -49,12 +53,10 @@ struct lval
 
     union
     {
-        char *error;
         long num_l;
         double num_d;
         bool bval;
-        char *string;
-        char *symbol;
+        char *str_val;
 
         // s-expressions or q-expressions
         struct
@@ -232,8 +234,9 @@ lval *lenv_to_lval(lenv *env);
 char *ltype_name(int type);
 
 /**
- * Evaluates an lval expression.
+ * Evaluates an lval expression, consumes input.
  * 
+ * @param env   the environment
  * @param input an lval expression
  * @returns     an lval node with the evaluated result
  */

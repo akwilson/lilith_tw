@@ -34,16 +34,16 @@ static void lval_expr_print(const lval *v, char open, char close)
 static void lval_print_string(const lval *str_val)
 {
     putchar('"');
-    int len = strlen(str_val->value.string);
+    int len = strlen(str_val->value.str_val);
     for (int i = 0; i < len; i++)
     {
-        if (is_escapable(str_val->value.string[i]))
+        if (is_escapable(str_val->value.str_val[i]))
         {
-            printf("%s", char_escape(str_val->value.string[i]));
+            printf("%s", char_escape(str_val->value.str_val[i]));
         }
         else
         {
-            putchar(str_val->value.string[i]);
+            putchar(str_val->value.str_val[i]);
         }
     }
 
@@ -104,13 +104,13 @@ lval *lval_error(const char *fmt, ...)
     va_start(va, fmt);
 
     // Allocate 512 bytes of space
-    v->value.error = malloc(512);
+    v->value.str_val = malloc(512);
 
     // printf the error string with a maximum of 511 characters
-    vsnprintf(v->value.error, 511, fmt, va);
+    vsnprintf(v->value.str_val, 511, fmt, va);
 
     // Reallocate to number of bytes actually used
-    v->value.error = realloc(v->value.error, strlen(v->value.error) + 1);
+    v->value.str_val = realloc(v->value.str_val, strlen(v->value.str_val) + 1);
 
     // Cleanup our va list
     va_end(va);
@@ -141,16 +141,16 @@ lval *lval_bool(bool bval)
 lval *lval_string(const char *string)
 {
     lval *rv = lval_init(LVAL_STRING);
-    rv->value.string = malloc(strlen(string) + 1);
-    strcpy(rv->value.string, string);
+    rv->value.str_val = malloc(strlen(string) + 1);
+    strcpy(rv->value.str_val, string);
     return rv;
 }
 
 lval *lval_symbol(const char *symbol)
 {
     lval *rv = lval_init(LVAL_SYMBOL);
-    rv->value.symbol = malloc(strlen(symbol) + 1);
-    strcpy(rv->value.symbol, symbol);
+    rv->value.str_val = malloc(strlen(symbol) + 1);
+    strcpy(rv->value.str_val, symbol);
     return rv;
 }
 
@@ -222,10 +222,10 @@ void lval_print(const lval *v)
         lval_print_string(v);
         break;
     case LVAL_SYMBOL:
-        printf("%s", v->value.symbol);
+        printf("%s", v->value.str_val);
         break;
     case LVAL_ERROR:
-        printf("Error: %s", v->value.error);
+        printf("Error: %s", v->value.str_val);
         break;
     case LVAL_BUILTIN_FUN:
         printf("<builtin>");
@@ -277,11 +277,9 @@ bool lval_is_equal(lval *x, lval *y)
     case LVAL_BOOL:
         return x->value.bval == y->value.bval;
     case LVAL_STRING:
-        return (strcmp(x->value.string, y->value.string) == 0);
     case LVAL_ERROR:
-        return (strcmp(x->value.error, y->value.error) == 0);
     case LVAL_SYMBOL:
-        return (strcmp(x->value.symbol, y->value.symbol) == 0);
+        return (strcmp(x->value.str_val, y->value.str_val) == 0);
     case LVAL_BUILTIN_FUN:
         return x->value.builtin == y->value.builtin;
     case LVAL_USER_FUN:
@@ -322,13 +320,9 @@ void lval_del(lval *v)
     case LVAL_BOOL:
         break;
     case LVAL_STRING:
-        free(v->value.string);
-        break;
     case LVAL_ERROR:
-        free(v->value.error);
-        break;
     case LVAL_SYMBOL:
-        free(v->value.symbol);
+        free(v->value.str_val);
         break;
     case LVAL_SEXPRESSION:
     case LVAL_QEXPRESSION:
@@ -368,18 +362,13 @@ lval *lval_copy(lval *v)
         rv->value.bval = v->value.bval;
         break;
     case LVAL_STRING:
-        rv->value.string = malloc(strlen(v->value.string) + 1);
-        strcpy(rv->value.string, v->value.string);
+    case LVAL_ERROR:
+    case LVAL_SYMBOL:
+        rv->value.str_val = malloc(strlen(v->value.str_val) + 1);
+        strcpy(rv->value.str_val, v->value.str_val);
         break;
     case LVAL_BUILTIN_FUN:
         rv->value.builtin = v->value.builtin;
-        break;
-    case LVAL_ERROR:
-        rv->value.error = v->value.error;
-        break;
-    case LVAL_SYMBOL:
-        rv->value.symbol = malloc(strlen(v->value.symbol) + 1);
-        strcpy(rv->value.symbol, v->value.symbol);
         break;
     case LVAL_QEXPRESSION:
     case LVAL_SEXPRESSION:

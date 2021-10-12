@@ -35,14 +35,14 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
         {
             lval_del(args);
             return lval_error("Too many aruments passed to function - expected %d, received %d",
-                    expected, given);
+                expected, given);
         }
 
         // Consume arguments -- bind argument to formal
         lval *sym = lval_pop(func->value.user_fun.formals);
 
         // Handle special case & - bind varargs as a q-expression
-        if (strcmp(sym->value.symbol, "&") == 0)
+        if (strcmp(sym->value.str_val, "&") == 0)
         {
             if (LVAL_EXPR_CNT(func->value.user_fun.formals) != 1)
             {
@@ -70,7 +70,7 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 
     // If '&' remains in formal list bind to empty list
     if (LVAL_EXPR_CNT(func->value.user_fun.formals) > 0 &&
-        strcmp(lval_expr_item(func->value.user_fun.formals, 0)->value.symbol, "&") == 0)
+        strcmp(lval_expr_item(func->value.user_fun.formals, 0)->value.str_val, "&") == 0)
     {
         // Check to ensure that & is not passed invalidly
         if (LVAL_EXPR_CNT(func->value.user_fun.formals) != 2)
