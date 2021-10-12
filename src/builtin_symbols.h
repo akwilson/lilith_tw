@@ -71,4 +71,7 @@
  */
 lval *call_builtin(lenv *env, char *symbol, lval *val);
 
+/**
+ * Adds a built-in function to the environment with the given name.
+ */
 void lenv_add_builtin(lenv *env, char *name, lbuiltin func);

@@ -15,10 +15,10 @@ lval *read_from_string(const char *input);
  * is a q-expression with one or more symbols. Additional arguments are values
  * that map to those symbols.
  * 
- * @param env       the environment to add to
- * @param val       q-expression in the first element, symbols in the subsequent elements
- * @param to_parent if true assign to the parent environment
- * @returns         an empty s-expression on success, an error otherwise
+ * @param env   the environment to add to
+ * @param val   q-expression in the first element, symbols in the subsequent elements
+ * @param adder pointer to a function to add to the environment
+ * @returns     an empty s-expression on success, an error otherwise
  */
 static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lval*))
 {
@@ -39,7 +39,7 @@ static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lv
         BUILTIN_SYM_DEF, LVAL_EXPR_CNT(syms), LVAL_EXPR_CNT(val) - 1);
     
     // Assign symbols to values
-    int i = 0;
+    size_t i = 0;
     for (pair *ptr = syms->value.list.head; ptr; ptr = ptr->next)
     {
         LASSERT(val, !adder(env, ptr->data, lval_expr_item(val, i + 1)),
@@ -175,7 +175,7 @@ static lval *lval_join_qexpr(lval *x, lval* y)
 
 static lval *lval_join_string(lval *x, lval *y)
 {
-    int l = strlen(x->value.str_val) + strlen(y->value.str_val) + 1;
+    size_t l = strlen(x->value.str_val) + strlen(y->value.str_val) + 1;
     char str[l];
     sprintf(str, "%s%s", x->value.str_val, y->value.str_val);
     lval_del(x);
@@ -563,7 +563,7 @@ static lval *builtin_env(lenv *env, lval *args)
 /**
  * FUnctions to check the type of an expression.
  */
-static lval *check_type(lenv *env, lval *args, int type, const char *fname)
+static lval *check_type(lenv *env, lval *args, unsigned type, const char *fname)
 {
     LASSERT_ENV(args, env, fname);
     LASSERT_NUM_ARGS(args, 1, fname);

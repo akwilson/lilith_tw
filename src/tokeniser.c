@@ -38,9 +38,9 @@ struct tokeniser
     const char *input; // original input expression
     const char *head;  // current place to read next token from
     char *next;        // buffer containing the next token
-    int next_size;     // size of the next buffer
-    int line;          // current line number being tokenised
-    int position;      // position on the current line
+    size_t next_size;  // size of the next buffer
+    unsigned line;     // current line number being tokenised
+    unsigned position; // position on the current line
 };
 
 /**
@@ -48,9 +48,9 @@ struct tokeniser
  */
 typedef struct
 {
-    TOKEN_TYPE start_type; // if the token is currently this type...
-    int transition_chars;  // ...and one of these characters is read...
-    TOKEN_TYPE end_type;   // ...change the inferred token type to this
+    TOKEN_TYPE start_type;      // if the token is currently this type...
+    unsigned transition_chars;  // ...and one of these characters is read...
+    TOKEN_TYPE end_type;        // ...change the inferred token type to this
 } graph_el;
 
 /**
@@ -94,7 +94,7 @@ static graph_el state_machine[] =
 /**
  * Nunber of lines in the state machine graph.
  */
-static const int state_machine_rows = 23;
+static const size_t state_machine_rows = 23;
 
 /**
  * Classifies a character.
@@ -142,7 +142,7 @@ static CHAR_TYPE get_char_type(char c)
  */
 static void check_next_buff(tokeniser *tok, const char *ptr)
 {
-    if (ptr - tok->next >= tok->next_size)
+    if (ptr - tok->next >= (long)tok->next_size)
     {
         tok->next = realloc(tok->next, tok->next_size * 2);
         tok->next_size *= 2;
@@ -217,7 +217,7 @@ static void skip_whitespace_and_comments(tokeniser *tok)
  */
 static TOKEN_TYPE infer_token_type(TOKEN_TYPE current, CHAR_TYPE next_char)
 {
-    for (int i = 0; i < state_machine_rows; i++)
+    for (size_t i = 0; i < state_machine_rows; i++)
     {
         if (state_machine[i].start_type == current && state_machine[i].transition_chars & next_char)
         {
@@ -299,12 +299,12 @@ bool get_next_token(tokeniser *tok, token *token)
     return true;
 }
 
-int get_line_number(const tokeniser *tok)
+unsigned get_line_number(const tokeniser *tok)
 {
     return tok->line;
 }
 
-int get_position(const tokeniser *tok)
+unsigned get_position(const tokeniser *tok)
 {
     return tok->position;
 }

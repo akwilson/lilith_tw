@@ -25,8 +25,8 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
     }
 
     // Argument counts
-    int given = LVAL_EXPR_CNT(args);
-    int expected = LVAL_EXPR_CNT(func->value.user_fun.formals);
+    size_t given = LVAL_EXPR_CNT(args);
+    size_t expected = LVAL_EXPR_CNT(func->value.user_fun.formals);
 
     // Bind the parameters to the formal symbols
     while (LVAL_EXPR_CNT(args))
@@ -116,7 +116,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     }
 
     // Check for errors
-    int i = 0;
+    size_t i = 0;
     for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
     {
         if (ptr->data->type == LVAL_ERROR)

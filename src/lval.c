@@ -8,7 +8,7 @@
 bool is_escapable(char x);
 char *char_escape(char x);
 
-static lval *lval_init(int type)
+static lval *lval_init(unsigned type)
 {
     lval *v = malloc(sizeof(lval));
     v->type = type;
@@ -34,8 +34,8 @@ static void lval_expr_print(const lval *v, char open, char close)
 static void lval_print_string(const lval *str_val)
 {
     putchar('"');
-    int len = strlen(str_val->value.str_val);
-    for (int i = 0; i < len; i++)
+    size_t len = strlen(str_val->value.str_val);
+    for (size_t i = 0; i < len; i++)
     {
         if (is_escapable(str_val->value.str_val[i]))
         {
@@ -50,9 +50,9 @@ static void lval_print_string(const lval *str_val)
     putchar('"');
 }
 
-lval *lval_expr_item(lval *val, int i)
+lval *lval_expr_item(lval *val, unsigned i)
 {
-    int expr_item = 0;
+    unsigned expr_item = 0;
     for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
     {
         if (expr_item++ == i)
@@ -76,9 +76,9 @@ lval *lval_pop(lval *val)
     return r;
 }
 
-lval *lval_take(lval *val, int i)
+lval *lval_take(lval *val, unsigned i)
 {
-    int cnt = 0;
+    unsigned cnt = 0;
     while (cnt++ < i)
     {
         lval_del(lval_pop(val));
@@ -347,8 +347,7 @@ void lval_del(lval *v)
 
 lval *lval_copy(lval *v)
 {
-    lval *rv = malloc(sizeof(lval));
-    rv->type = v->type;
+    lval *rv = lval_init(v->type);
 
     switch (v->type)
     {
@@ -389,7 +388,7 @@ lval *lval_copy(lval *v)
     return rv;
 }
 
-char *ltype_name(int type)
+char *ltype_name(unsigned type)
 {
     switch(type)
     {

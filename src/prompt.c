@@ -42,7 +42,7 @@ static void load_and_eval_from_file(lenv *env, const char *filename)
 
 static void version()
 {
-    printf("Lilith Lisp v0.2.0\n");
+    printf("Lilith Lisp v0.3.0\n");
 }
 
 static void usage()
@@ -57,7 +57,7 @@ static void usage()
 
 int main(int argc, char *argv[])
 {
-    int running = 1;
+    bool running = true;
     lenv *env = lenv_new();
 
     lenv_add_builtins_sums(env);
@@ -76,12 +76,12 @@ int main(int argc, char *argv[])
         if (strcmp(argv[1], "-h") == 0)
         {
             usage();
-            running = 0;
+            running = false;
         }
         else if (strcmp(argv[1], "-v") == 0)
         {
             version();
-            running = 0;
+            running = false;
         }
         else
         {
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
             if (strcmp(input, "exit") == 0)
             {
-                running = 0;
+                running = false;
             }
             else
             {
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
         else
         {
             putchar('\n');
-            running = 0;
+            running = false;
         }
     }
 

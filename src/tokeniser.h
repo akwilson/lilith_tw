@@ -27,8 +27,8 @@ typedef enum
  */
 typedef struct
 {
+    const char *token;
     TOKEN_TYPE type;
-    const char* token;
 } token;
 
 /**
@@ -55,12 +55,12 @@ bool get_next_token(tokeniser *tok, token *token);
 /**
  * Gets the current line number of the string being tokenised.
  */
-int get_line_number(const tokeniser *tok);
+unsigned get_line_number(const tokeniser *tok);
 
 /**
  * Gets the position on the current line being tokenised.
  */
-int get_position(const tokeniser *tok);
+unsigned get_position(const tokeniser *tok);
 
 /**
  * Frees the tokeniser and all memory allocated by it.

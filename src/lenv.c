@@ -13,7 +13,7 @@ typedef struct env_entry
 struct lenv
 {
     lenv *parent;
-    int count;
+    size_t count;
     char **symbols;
     env_entry **values;
 };
@@ -22,7 +22,7 @@ static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
 {
     // Iterate over all items in environment
     // This is to see if variable already exists
-    for (int i = 0; i < e->count; i++)
+    for (size_t i = 0; i < e->count; i++)
     {
         // If variable is found delete item at that position
         // And replace with variable supplied by user
@@ -76,7 +76,7 @@ void lenv_set_parent(lenv *env, lenv *parent)
 
 void lenv_del(lenv *e)
 {
-    for (int i = 0; i < e->count; i++)
+    for (size_t i = 0; i < e->count; i++)
     {
         free(e->symbols[i]);
         lval_del(e->values[i]->value);
@@ -90,7 +90,7 @@ void lenv_del(lenv *e)
 
 lval *lenv_get(lenv *e, lval *k)
 {
-    for (int i = 0; i < e->count; i++)
+    for (size_t i = 0; i < e->count; i++)
     {
         if (strcmp(e->symbols[i], k->value.str_val) == 0)
         {
@@ -136,7 +136,7 @@ lenv *lenv_copy(lenv *e)
     rv->symbols = malloc(sizeof(char*) * rv->count);
     rv->values = malloc(sizeof(env_entry*) * rv->count);
 
-    for (int i = 0; i < rv->count; i++)
+    for (size_t i = 0; i < rv->count; i++)
     {
         rv->symbols[i] = malloc(strlen(e->symbols[i]) + 1);
         strcpy(rv->symbols[i], e->symbols[i]);
@@ -153,7 +153,7 @@ lenv *lenv_copy(lenv *e)
 lval *lenv_to_lval(lenv *env)
 {
     lval *rv = lval_qexpression();
-    for (int i = 0; i < env->count; i++)
+    for (size_t i = 0; i < env->count; i++)
     {
         lval *pair = lval_qexpression();
         lval_add(pair, lval_string(env->symbols[i]));

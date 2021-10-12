@@ -49,8 +49,6 @@ typedef struct _pair
  */
 struct lval
 {
-    int type;
-
     union
     {
         long num_l;
@@ -61,7 +59,7 @@ struct lval
         // s-expressions or q-expressions
         struct
         {
-            int count;
+            size_t count;
             pair *head;
         } list;
 
@@ -74,12 +72,13 @@ struct lval
             lval *body;
         } user_fun;
     } value;
+    unsigned type;
 };
 
 /**
  * Return an item from the list.
  */
-lval *lval_expr_item(lval *val, int i);
+lval *lval_expr_item(lval *val, unsigned i);
 
 /**
  * Remove and return the first item in the list.
@@ -89,7 +88,7 @@ lval *lval_pop(lval *val);
 /**
  * Remove an item from a list and delete the list and remaining items.
  */
-lval *lval_take(lval *val, int i);
+lval *lval_take(lval *val, unsigned i);
 
 /**
  * Generates a new lval with an error message.
@@ -231,7 +230,7 @@ lval *lenv_to_lval(lenv *env);
 /**
  * Convert a type in to a user-friendly name.
  */
-char *ltype_name(int type);
+char *ltype_name(unsigned type);
 
 /**
  * Evaluates an lval expression, consumes input.
