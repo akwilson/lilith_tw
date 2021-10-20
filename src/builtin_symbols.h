@@ -32,6 +32,7 @@
 #define BUILTIN_SYM_ENV "env"
 #define BUILTIN_SYM_PRINT "print"
 #define BUILTIN_SYM_ERROR "error"
+#define BUILTIN_SYM_TRY "try"
 
 // Type checking
 #define BUILTIN_SYM_IS_STRING "string?"
@@ -45,7 +46,8 @@
  * Error checking macros.
  */
 #define LASSERT(args, cond, fmt, ...)                   \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (!(cond))                                    \
         {                                               \
             lval *err = lval_error(fmt, ##__VA_ARGS__); \
@@ -57,14 +59,23 @@
 #define LASSERT_ENV(arg, arg_env, arg_symbol) \
     LASSERT(arg, arg_env != 0, "environment not set for '%s'", arg_symbol)
 
-#define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
-    LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
-        "function '%s' expects %d argument, received %d", \
-        arg_symbol, expected, LVAL_EXPR_CNT(arg))
-
-#define LASSERT_TYPE_ARG(arg, val, expected, arg_symbol)                                          \
-    LASSERT(arg, val->type == expected, "function '%s' type mismatch - expected %s, received %s", \
-        arg_symbol, ltype_name(expected), ltype_name(val->type))
+/*
+ * If any of the list elements are an error, return the
+ * error and delete all of the other arguments.
+ */
+#define LASSERT_NO_ERROR(val)                                        \
+    do                                                               \
+    {                                                                \
+        size_t i = 0;                                                \
+        for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next) \
+        {                                                            \
+            if (ptr->data->type == LVAL_ERROR)                       \
+            {                                                        \
+                return lval_take(val, i);                            \
+            }                                                        \
+            i++;                                                     \
+        }                                                            \
+    } while (0)
 
 /**
  * Utility function to call built-in functions from elsewhere in the code base.

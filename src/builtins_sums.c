@@ -95,6 +95,7 @@ static lval *do_calc(enum iops_enum iop, lval *xval, lval *yval)
 static lval *builtin_op(lenv *env, lval *a, const char* symbol, enum iops_enum iop)
 {
     LASSERT_ENV(a, env, symbol);
+    LASSERT_NO_ERROR(a);
 
     // Confirm that all arguments are numeric values
     for (pair *ptr = a->value.list.head; ptr; ptr = ptr->next)

@@ -10,6 +10,15 @@ char *lookup_load_file(const char *filename);
 lval *multi_eval(lenv *env, lval *expr);
 lval *read_from_string(const char *input);
 
+#define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
+    LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
+        "function '%s' expects %d argument, received %d", \
+        arg_symbol, expected, LVAL_EXPR_CNT(arg))
+
+#define LASSERT_TYPE_ARG(arg, val, expected, arg_symbol)                                          \
+    LASSERT(arg, val->type == expected, "function '%s' type mismatch - expected %s, received %s", \
+        arg_symbol, ltype_name(expected), ltype_name(val->type))
+
 /**
  * Built-in function for defining new symbols. First argument in val's list
  * is a q-expression with one or more symbols. Additional arguments are values
@@ -23,6 +32,7 @@ lval *read_from_string(const char *input);
 static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lval*))
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_DEF);
+    LASSERT_NO_ERROR(val);
     LASSERT_TYPE_ARG(val, LVAL_EXPR_FIRST(val), LVAL_QEXPRESSION, BUILTIN_SYM_DEF);
 
     // First argument is a symbol list
@@ -67,6 +77,8 @@ static lval *builtin_put(lenv *env, lval *val)
 static lval *builtin_list(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_LIST);
+    LASSERT_NO_ERROR(args);
+
     args->type = LVAL_QEXPRESSION;
     return args;
 }
@@ -96,6 +108,7 @@ static lval *head_string(lval *args)
 static lval *builtin_head(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_HEAD);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_HEAD);
     LASSERT(args, LVAL_EXPR_FIRST(args)->type == LVAL_QEXPRESSION || LVAL_EXPR_FIRST(args)->type == LVAL_STRING,
         "function '%s' type mismatch - expected String or Q-Expression, received %s",
@@ -128,6 +141,7 @@ static lval *tail_string(lval *args)
 static lval *builtin_tail(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_TAIL);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_TAIL);
     LASSERT(args, LVAL_EXPR_FIRST(args)->type == LVAL_QEXPRESSION || LVAL_EXPR_FIRST(args)->type == LVAL_STRING,
         "function '%s' type mismatch - expected String or Q-Expression, received %s",
@@ -151,6 +165,7 @@ static lval *builtin_tail(lenv *env, lval *args)
 static lval *builtin_eval(lenv* env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_EVAL);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_EVAL);
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_QEXPRESSION, BUILTIN_SYM_EVAL);
 
@@ -189,6 +204,7 @@ static lval *lval_join_string(lval *x, lval *y)
 static lval *builtin_join(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_JOIN);
+    LASSERT_NO_ERROR(args);
 
     lval *x = lval_pop(args);
     for (pair *ptr = args->value.list.head; ptr; ptr = ptr->next)
@@ -224,6 +240,7 @@ static lval *builtin_join(lenv *env, lval *args)
 static lval *builtin_len(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_LEN);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_LEN);
     LASSERT(args, LVAL_EXPR_FIRST(args)->type == LVAL_QEXPRESSION || LVAL_EXPR_FIRST(args)->type == LVAL_STRING,
         "function '%s' type mismatch - expected String or Q-Expression, received %s",
@@ -241,6 +258,7 @@ static lval *builtin_len(lenv *env, lval *args)
 static lval *builtin_cons(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_CONS);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 2, BUILTIN_SYM_CONS);
     LASSERT(args,
         LVAL_EXPR_FIRST(args)->type == LVAL_LONG || LVAL_EXPR_FIRST(args)->type == LVAL_DOUBLE ||
@@ -266,6 +284,7 @@ static lval *builtin_cons(lenv *env, lval *args)
 static lval *builtin_init(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_INIT);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_INIT);
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_QEXPRESSION, BUILTIN_SYM_INIT);
     LASSERT(args, LVAL_EXPR_CNT(LVAL_EXPR_FIRST(args)) != 0, "empty q-expression passed to '%s'", BUILTIN_SYM_INIT);
@@ -288,6 +307,7 @@ static lval *builtin_init(lenv *env, lval *args)
 static lval *builtin_lambda(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_LAMBDA);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 2, BUILTIN_SYM_LAMBDA);
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_QEXPRESSION, BUILTIN_SYM_LAMBDA);
     LASSERT_TYPE_ARG(args, args->value.list.head->next->data, LVAL_QEXPRESSION, BUILTIN_SYM_LAMBDA);
@@ -315,6 +335,7 @@ static lval *builtin_lambda(lenv *env, lval *args)
 static lval *builtin_if(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_IF);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 3, BUILTIN_SYM_IF);
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_BOOL, BUILTIN_SYM_IF);
     LASSERT_TYPE_ARG(args, lval_expr_item(args, 1), LVAL_QEXPRESSION, BUILTIN_SYM_IF);
@@ -362,6 +383,7 @@ static bool type_check(lval *x, lval *y)
 static lval *builtin_eq(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_EQ);
+    LASSERT_NO_ERROR(args);
 
     // Get the first value
     lval *x = lval_pop(args);
@@ -400,6 +422,7 @@ static lval *builtin_eq(lenv *env, lval *args)
 static lval *builtin_and(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_AND);
+    LASSERT_NO_ERROR(args);
 
     // Confirm that all arguments are boolean
     for (pair *ptr = args->value.list.head; ptr; ptr = ptr->next)
@@ -433,6 +456,7 @@ static lval *builtin_and(lenv *env, lval *args)
 static lval *builtin_or(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_OR);
+    LASSERT_NO_ERROR(args);
 
     // Confirm that all arguments are boolean
     for (pair *ptr = args->value.list.head; ptr; ptr = ptr->next)
@@ -466,6 +490,7 @@ static lval *builtin_or(lenv *env, lval *args)
 static lval *builtin_not(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_NOT);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_NOT);
     LASSERT_TYPE_ARG(args, LVAL_EXPR_FIRST(args), LVAL_BOOL, BUILTIN_SYM_NOT);
 
@@ -481,6 +506,7 @@ static lval *builtin_not(lenv *env, lval *args)
 static lval *builtin_load(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_LOAD);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_LOAD);
 
     lval *rv = 0;
@@ -506,6 +532,7 @@ static lval *builtin_load(lenv *env, lval *args)
 static lval *builtin_print(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_PRINT);
+    LASSERT_NO_ERROR(args);
 
     for (pair *ptr = args->value.list.head; ptr; ptr = ptr->next)
     {
@@ -525,6 +552,7 @@ static lval *builtin_print(lenv *env, lval *args)
 static lval *builtin_error(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_ERROR);
+    LASSERT_NO_ERROR(args);
     lval *err = lval_error(LVAL_EXPR_FIRST(args)->value.str_val);
     lval_del(args);
     return err;
@@ -536,6 +564,7 @@ static lval *builtin_error(lenv *env, lval *args)
 static lval *builtin_read(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_READ);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_READ);
 
     lval *expr = read_from_string(LVAL_EXPR_FIRST(args)->value.str_val);
@@ -555,9 +584,33 @@ static lval *builtin_read(lenv *env, lval *args)
 static lval *builtin_env(lenv *env, lval *args)
 {
     LASSERT_ENV(args, env, BUILTIN_SYM_ENV);
+    LASSERT_NO_ERROR(args);
 
     lval_del(args);
     return lenv_to_lval(env);
+}
+
+/**
+ * Built-in function to handle errors. If the first argument
+ * is an error then eval the second expression.
+ */
+static lval *builtin_try(lenv *env, lval *args)
+{
+    LASSERT_ENV(args, env, BUILTIN_SYM_TRY);
+    LASSERT_NUM_ARGS(args, 2, BUILTIN_SYM_TRY);
+    LASSERT_TYPE_ARG(args, args->value.list.head->next->data, LVAL_QEXPRESSION, BUILTIN_SYM_TRY);
+
+    lval *res = lval_pop(args);
+    if (res->type == LVAL_ERROR)
+    {
+        lval_del(res);
+        lval *handler = lval_pop(args);
+        handler->type = LVAL_SEXPRESSION;
+        res = lval_eval(env, handler);
+    }
+
+    lval_del(args);
+    return res;
 }
 
 /**
@@ -566,6 +619,7 @@ static lval *builtin_env(lenv *env, lval *args)
 static lval *check_type(lenv *env, lval *args, unsigned type, const char *fname)
 {
     LASSERT_ENV(args, env, fname);
+    LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, fname);
 
     lval *rv = lval_bool(LVAL_EXPR_FIRST(args)->type == type);
@@ -646,6 +700,7 @@ void lenv_add_builtins_funcs(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_ERROR, builtin_error);
     lenv_add_builtin(e, BUILTIN_SYM_READ, builtin_read);
     lenv_add_builtin(e, BUILTIN_SYM_ENV, builtin_env);
+    lenv_add_builtin(e, BUILTIN_SYM_TRY, builtin_try);
     lenv_add_builtin(e, BUILTIN_SYM_IS_STRING, builtin_is_string);
     lenv_add_builtin(e, BUILTIN_SYM_IS_LONG, builtin_is_long);
     lenv_add_builtin(e, BUILTIN_SYM_IS_DOUBLE, builtin_is_double);

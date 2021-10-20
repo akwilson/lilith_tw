@@ -215,6 +215,18 @@
   }
 )
 
+; Checks that the expression results in an error.
+(defun {assert-fail name f msg}
+  {try
+    (do
+      (f)
+      ;(print (join "  " name ": " msg))
+      (#f)
+    )
+    {#t}
+  }
+)
+
 ; Executes a series of tests and prints out a
 ; summary of those succeeding and failing.
 (defun {deftest x asserts}

@@ -52,7 +52,15 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
 
             // Next formal should be bound to remaining arguments
             lval *nsym = lval_pop(func->value.user_fun.formals);
-            lenv_put(func->value.user_fun.env, nsym, call_builtin(env, BUILTIN_SYM_LIST, args));
+            lval *lst = call_builtin(env, BUILTIN_SYM_LIST, args);
+            if (lst->type == LVAL_ERROR)
+            {
+                lval_del(nsym);
+                lval_del(sym);
+                return lst;
+            }
+
+            lenv_put(func->value.user_fun.env, nsym, lst);
             lval_del(nsym);
             lval_del(sym);
             break;
@@ -65,7 +73,7 @@ static lval *lval_call(lenv *env, lval *func, lval *args)
         lval_del(param);
     }
 
-    // Argument list os bound so can be cleaned up
+    // Argument list is bound so can be cleaned up
     lval_del(args);
 
     // If '&' remains in formal list bind to empty list
@@ -115,28 +123,21 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
         ptr->data = lval_eval(env, ptr->data);
     }
 
-    // Check for errors
-    size_t i = 0;
-    for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
-    {
-        if (ptr->data->type == LVAL_ERROR)
-        {
-            return lval_take(val, i);
-        }
-
-        i++;
-    }
-
     // Empty expressions
     if (LVAL_EXPR_CNT(val) == 0)
     {
         return val;
     }
 
-    // Single expression
-    if (LVAL_EXPR_CNT(val) == 1 && (lval_expr_item(val, 0)->type != LVAL_BUILTIN_FUN))
+    if (LVAL_EXPR_FIRST(val)->type == LVAL_ERROR)
     {
-        lval* rv = lval_pop(val);
+        return lval_take(val, 0);
+    }
+
+    // Single expression
+    if (LVAL_EXPR_CNT(val) == 1 && (LVAL_EXPR_FIRST(val)->type != LVAL_BUILTIN_FUN))
+    {
+        lval *rv = lval_pop(val);
         lval_del(val);
         return rv;
     }

@@ -68,7 +68,7 @@
     (assert "Case 1" (day-name 0) "Monday" "Monday is the first day of the week")
     (assert "Case 2" (day-name 3) "Thursday" "Thursday is the fourth day of the week")
     (assert "Case 3" (day-name 6) "Sunday" "Sunday is the seventh day of the week")
-    ;(assert "Case 4" (day-name 99) "Error: no case found" "Error condition")
+    (assert-fail "Case 4" (day-name 99) "Error condition")
   }
 )
 

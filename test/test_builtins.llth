@@ -71,6 +71,13 @@
   }
 )
 
+(deftest "Error Handling"
+  {
+    (assert "Try" (try (+ 1 2 3) {999}) 6 "Successful try should return result")
+    (assert "Try Fail" (try (error "error") {999}) 999 "Unsuccessful try should call handler")
+  }
+)
+
 (deftest "Compound Tests"
   {
     (assert "Combination"
