@@ -1,44 +1,17 @@
+/*
+ * The entry point for the Lilith interpreter.
+ */
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 #include <editline/readline.h>
 
-#include "lilith_int.h"
-#include "builtin_symbols.h"
+#include "lilith.h"
 
 #ifdef __linux
 #include <editline/history.h>
-extern char _stdlib_llth_start;
-#else
-extern char stdlib_llth_start;
 #endif
-
-lval *multi_eval(lenv *env, lval *expr);
-lval *read_from_string(const char *input);
-
-/**
- * Loads the statically linked Lilith standard library in to the environment.
- */
-static lval *load_std_lib(lenv *env)
-{
-#ifdef __linux
-    char *stdlib = &_stdlib_llth_start;
-#else
-    char *stdlib = &stdlib_llth_start;
-#endif
-
-    lval *expr = read_from_string(stdlib);
-    return multi_eval(env, expr);
-}
-
-static void load_and_eval_from_file(lenv *env, const char *filename)
-{
-    lval *args = lval_add(lval_sexpression(), lval_string(filename));
-    lval *x = call_builtin(env, BUILTIN_SYM_LOAD, args);
-    if (x->type == LVAL_ERROR)
-    {
-        lval_println(x);
-    }
-
-    lval_del(x);
-}
 
 static void version()
 {
@@ -58,19 +31,13 @@ static void usage()
 int main(int argc, char *argv[])
 {
     bool running = true;
-    lenv *env = lenv_new();
-
-    lenv_add_builtins_sums(env);
-    lenv_add_builtins_funcs(env);
-    lval *x = load_std_lib(env);
-    if (x->type == LVAL_ERROR)
+    lenv *env = lilith_init();
+    if (!env)
     {
-        printf("Error reading standard library. ");
-        lval_println(x);
+        printf("Error initialising Lilith environment\n");
         return 1;
     }
 
-    lval_del(x);
     if (argc > 1)
     {
         if (strcmp(argv[1], "-h") == 0)
@@ -90,7 +57,7 @@ int main(int argc, char *argv[])
             {
                 if (argv[i][0] != '-')
                 {
-                    load_and_eval_from_file(env, argv[i]);
+                    lilith_eval_file(env, argv[i]);
                 }
             }
         }
@@ -115,9 +82,9 @@ int main(int argc, char *argv[])
             }
             else
             {
-                lval *result = lval_eval(env, read_from_string(input));
-                lval_println(result);
-                lval_del(result);
+                lval *result = lilith_eval_expr(env, lilith_read_from_string(input));
+                lilith_println(result);
+                lilith_lval_del(result);
             }
 
             free(input);
@@ -129,6 +96,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    lenv_del(env);
+    lilith_cleanup(env);
     return 0;
 }

@@ -7,6 +7,8 @@
 #include "lilith_int.h"
 #include "builtin_symbols.h"
 
+lval *lilith_eval_expr(lenv *env, lval *val);
+
 /**
  * Calls a function. Binds each parameter to its environment and evaluates
  * the function with that environment. If too few arguments are passed it
@@ -120,7 +122,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     // Evaluate children
     for (pair *ptr = val->value.list.head; ptr; ptr = ptr->next)
     {
-        ptr->data = lval_eval(env, ptr->data);
+        ptr->data = lilith_eval_expr(env, ptr->data);
     }
 
     // Empty expressions
@@ -158,7 +160,7 @@ static lval *lval_eval_sexpr(lenv *env, lval *val)
     return result;
 }
 
-lval *lval_eval(lenv *env, lval *val)
+lval *lilith_eval_expr(lenv *env, lval *val)
 {
     // Lookup the function and return
     if (val->type == LVAL_SYMBOL)
@@ -178,15 +180,12 @@ lval *lval_eval(lenv *env, lval *val)
     return val;
 }
 
-/**
- * Evaluates all of the expressions in a parsed result.
- */
 lval *multi_eval(lenv *env, lval *expr)
 {
     // Evaluate each expression
     while (LVAL_EXPR_CNT(expr))
     {
-        lval *x = lval_eval(env, lval_pop(expr));
+        lval *x = lilith_eval_expr(env, lval_pop(expr));
         if (x->type == LVAL_ERROR)
         {
             lval_del(expr);

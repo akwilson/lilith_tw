@@ -114,7 +114,7 @@ static lval *read_list(tokeniser *tok, lval *list)
 /**
  * Converts a string containing one or more Lilith expressions in to an lval.
  */
-lval *read_from_string(const char *input)
+lval *lilith_read_from_string(const char *input)
 {
     lval *rv = lval_sexpression();
     tokeniser *tok = new_tokeniser(input);

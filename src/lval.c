@@ -246,12 +246,6 @@ void lval_print(const lval *v)
     }
 }
 
-void lval_println(const lval *v)
-{
-    lval_print(v);
-    putchar('\n');
-}
-
 bool lval_is_equal(lval *x, lval *y)
 {
     if (x->type != y->type)
@@ -414,4 +408,15 @@ char *ltype_name(unsigned type)
         default:
             return "Unknown";
     }
+}
+
+void lilith_println(const lval *val)
+{
+    lval_print(val);
+    putchar('\n');
+}
+
+void lilith_lval_del(lval *val)
+{
+    lval_del(val);
 }

@@ -4,6 +4,12 @@
 
 #include "lilith_int.h"
 
+#ifdef __linux
+extern char _stdlib_llth_start;
+#else
+extern char stdlib_llth_start;
+#endif
+
 typedef struct env_entry
 {
     bool is_builtin;
@@ -17,6 +23,21 @@ struct lenv
     char **symbols;
     env_entry **values;
 };
+
+/**
+ * Loads the statically linked Lilith standard library in to the environment.
+ */
+static lval *load_std_lib(lenv *env)
+{
+#ifdef __linux
+    char *stdlib = &_stdlib_llth_start;
+#else
+    char *stdlib = &stdlib_llth_start;
+#endif
+
+    lval *expr = lilith_read_from_string(stdlib);
+    return multi_eval(env, expr);
+}
 
 static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
 {
@@ -162,4 +183,25 @@ lval *lenv_to_lval(lenv *env)
     }
 
     return rv;
+}
+
+lenv *lilith_init()
+{
+    lenv *env = lenv_new();
+    lenv_add_builtins_sums(env);
+    lenv_add_builtins_funcs(env);
+    lval *x = load_std_lib(env);
+    if (x->type == LVAL_ERROR)
+    {
+        lilith_println(x);
+        return 0;
+    }
+
+    lval_del(x);
+    return env;
+}
+
+void lilith_cleanup(lenv *env)
+{
+    lenv_del(env);
 }

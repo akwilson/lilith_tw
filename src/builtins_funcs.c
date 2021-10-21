@@ -7,8 +7,6 @@
 #include "builtin_symbols.h"
 
 char *lookup_load_file(const char *filename);
-lval *multi_eval(lenv *env, lval *expr);
-lval *read_from_string(const char *input);
 
 #define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
     LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
@@ -171,7 +169,7 @@ static lval *builtin_eval(lenv* env, lval *args)
 
     lval *x = lval_take(args, 0);
     x->type = LVAL_SEXPRESSION;
-    return lval_eval(env, x);
+    return lilith_eval_expr(env, x);
 }
 
 /**
@@ -349,13 +347,13 @@ static lval *builtin_if(lenv *env, lval *args)
     if (stmt->value.bval)
     {
         br_true->type = LVAL_SEXPRESSION;
-        rv = lval_eval(env, br_true);
+        rv = lilith_eval_expr(env, br_true);
         lval_del(br_false);
     }
     else
     {
         br_false->type = LVAL_SEXPRESSION;
-        rv = lval_eval(env, br_false);
+        rv = lilith_eval_expr(env, br_false);
         lval_del(br_true);
     }
 
@@ -517,7 +515,7 @@ static lval *builtin_load(lenv *env, lval *args)
     }
     else
     {
-        lval *expr = read_from_string(fn);
+        lval *expr = lilith_read_from_string(fn);
         rv = multi_eval(env, expr);
         free(fn);
     }
@@ -567,7 +565,7 @@ static lval *builtin_read(lenv *env, lval *args)
     LASSERT_NO_ERROR(args);
     LASSERT_NUM_ARGS(args, 1, BUILTIN_SYM_READ);
 
-    lval *expr = read_from_string(LVAL_EXPR_FIRST(args)->value.str_val);
+    lval *expr = lilith_read_from_string(LVAL_EXPR_FIRST(args)->value.str_val);
     if (expr->type == LVAL_ERROR)
     {
         return expr;
@@ -606,7 +604,7 @@ static lval *builtin_try(lenv *env, lval *args)
         lval_del(res);
         lval *handler = lval_pop(args);
         handler->type = LVAL_SEXPRESSION;
-        res = lval_eval(env, handler);
+        res = lilith_eval_expr(env, handler);
     }
 
     lval_del(args);
@@ -707,4 +705,16 @@ void lenv_add_builtins_funcs(lenv *e)
     lenv_add_builtin(e, BUILTIN_SYM_IS_BOOL, builtin_is_bool);
     lenv_add_builtin(e, BUILTIN_SYM_IS_QEXPR, builtin_is_qexpr);
     lenv_add_builtin(e, BUILTIN_SYM_IS_SEXPR, builtin_is_sexpr);
+}
+
+void lilith_eval_file(lenv *env, const char *filename)
+{
+    lval *args = lval_add(lval_sexpression(), lval_string(filename));
+    lval *x = builtin_load(env, args);
+    if (x->type == LVAL_ERROR)
+    {
+        lilith_println(x);
+    }
+
+    lval_del(x);
 }

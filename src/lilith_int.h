@@ -4,14 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "lilith.h"
 
 #define LVAL_EXPR_CNT(arg) arg->value.list.count
 #define LVAL_EXPR_FIRST(arg) arg->value.list.head->data
-
-struct lval;
-struct lenv;
-typedef struct lval lval;
-typedef struct lenv lenv;
 
 /**
  * Pointer to a built-in function.
@@ -153,16 +149,6 @@ lval *lval_add(lval *v, lval *x);
 void lval_print(const lval *v);
 
 /**
- * Prints the contents of an lval to the screen with a newline.
- */
-void lval_println(const lval *v);
-
-/**
- * Frees up an lval.
- */
-void lval_del(lval *v);
-
-/**
  * Perform a deep copy on an lval.
  */
 lval *lval_copy(lval *v);
@@ -171,6 +157,11 @@ lval *lval_copy(lval *v);
  * Check two lvals for equality.
  */
 bool lval_is_equal(lval *x, lval *y);
+
+/**
+ * Free an lval.
+ */
+void lval_del(lval *v);
 
 /**
  * Initialises a new instance of lenv;
@@ -233,10 +224,6 @@ lval *lenv_to_lval(lenv *env);
 char *ltype_name(unsigned type);
 
 /**
- * Evaluates an lval expression, consumes input.
- * 
- * @param env   the environment
- * @param input an lval expression
- * @returns     an lval node with the evaluated result
+ * Evaluates all of the expressions in a parsed result.
  */
-lval *lval_eval(lenv *env, lval *input);
+lval *multi_eval(lenv *env, lval *expr);
