@@ -15,7 +15,7 @@ static lval *lval_init(unsigned type)
     return v;
 }
 
-static void lval_expr_print(const lval *v, char open, char close)
+static void lval_expr_print(const lval *v, char open, char close, unsigned options)
 {
     putchar(open);
     for (pair *ptr = v->value.list.head; ptr; ptr = ptr->next)
@@ -25,7 +25,7 @@ static void lval_expr_print(const lval *v, char open, char close)
             putchar(' ');
         }
 
-        lval_print(ptr->data);
+        lval_print(ptr->data, options);
     }
 
     putchar(close);
@@ -205,7 +205,7 @@ lval *lval_add(lval *v, lval *x)
     return v;
 }
 
-void lval_print(const lval *v)
+void lval_print(const lval *v, unsigned options)
 {
     switch (v->type)
     {
@@ -219,7 +219,14 @@ void lval_print(const lval *v)
         printf("%s", v->value.bval ? "#t" : "#f");
         break;
     case LVAL_STRING:
-        lval_print_string(v);
+        if (!options)
+        {
+            lval_print_string(v);
+        }
+        else
+        {
+            printf("%s", v->value.str_val);
+        }
         break;
     case LVAL_SYMBOL:
         printf("%s", v->value.str_val);
@@ -231,16 +238,16 @@ void lval_print(const lval *v)
         printf("<builtin>");
         break;
     case LVAL_SEXPRESSION:
-        lval_expr_print(v, '(', ')');
+        lval_expr_print(v, '(', ')', options);
         break;
     case LVAL_QEXPRESSION:
-        lval_expr_print(v, '{', '}');
+        lval_expr_print(v, '{', '}', options);
         break;
     case LVAL_USER_FUN:
         printf("(\\ ");
-        lval_print(v->value.user_fun.formals);
+        lval_print(v->value.user_fun.formals, options);
         putchar(' ');
-        lval_print(v->value.user_fun.body);
+        lval_print(v->value.user_fun.body, options);
         putchar(')');
         break;
     }
@@ -412,7 +419,7 @@ char *ltype_name(unsigned type)
 
 void lilith_println(const lval *val)
 {
-    lval_print(val);
+    lval_print(val, 0);
     putchar('\n');
 }
 

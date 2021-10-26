@@ -242,7 +242,7 @@ static void copy_char(char **ptr, tokeniser *tok, TOKEN_TYPE current_type)
             increment_head(tok);
             if (is_unescapable(*tok->head))
             {
-                *(*ptr++) = char_unescape(*tok->head);
+                *(*ptr)++ = char_unescape(*tok->head);
                 return;
             }
         }
@@ -335,10 +335,10 @@ extern char stdlib_llth_start;
 
 int main()
 {
-    //char *expr = &stdlib_llth_start;
-    //char * expr = "; dafuq\n;wibble\n   {{\n{+ (#t ^tyu \"balls\") 9} ; some stuff\n   -5\t+11 +23.6 -19.76 .4 -.895}}  ";
-    char *expr = "; dafuq\n;wib\tble\n   {{\n{+ (#t ^tyu \" this is a test\" \"ba\\tlls\) 9} ; some stuff\n   5\t11 23 }}  ";
-    //char *expr = "; dafuq\n;wibble\n   {{\n{+ (#t ^tyu \"balls) 9} ; some stuff   5\t11 23 }}  ";
+    char *expr = &stdlib_llth_start;
+    //char * expr = "; gandalf\n;wibble\n   {{\n{+ (#t ^tyu \"balls\") 9} ; some stuff\n   -5\t+11 +23.6 -19.76 .4 -.895}}  ";
+    //char *expr = "; gandalf\n;wib\tble\n   {{\n{+ (#t ^tyu \" this is a test\" \"ba\\tlls\) 9} ; some stuff\n   5\t11 23 }}  ";
+    //char *expr = "; gandalf\n;wibble\n   {{\n{+ (#t ^tyu \"balls) 9} ; some stuff   5\t11 23 }}  ";
     //char *expr = "(* 10.9 \"tits\" (+ 1 3))";
     //char *expr = "(eval(cons + {45 65 56 234(+ 10 2) 75 987}))";
     //printf("Expression: %s\n", expr);

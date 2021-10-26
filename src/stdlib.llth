@@ -207,7 +207,7 @@
       (if (= res expected)
         {#t}
         {do
-          (print (join "  " name ": " msg ". Expected") expected "actual" res)
+          (print "\t***" name msg "| Expected" expected "| Actual" res)
           (#f)
         }
       )
@@ -243,8 +243,9 @@
           }
         )
       )
+      (print x)
       (put {test_ok} (runner 0 asserts))
-      (print x "Succeeded:" test_ok "Failed:" (- (len asserts) test_ok))
+      (print "\tSucceeded:" test_ok "\tFailed:" (- (len asserts) test_ok))
     }
   }
 )

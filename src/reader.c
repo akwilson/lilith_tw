@@ -172,8 +172,8 @@ int main()
     //char *expr = "; dafuq\n;wibble\n   {{\n{+ (#t ^tyu \"balls\") 9} ; some stuff\n   5\t11 23 }}  ";
     //char *expr = "; dafuq\n;wib\tble\n   {{\n{+ (#t ^tyu \" this is a test\" \"ba\\tlls\") 9 2} ; some stuff\n   5\t11 23 }}  ";
     //printf("Expression: %s\n", expr);
-    lval *lv = read_from_string(expr);
-    lval_println(lv);
+    lval *lv = lilith_read_from_string(expr);
+    lilith_println(lv);
     return 0;
 }
 */

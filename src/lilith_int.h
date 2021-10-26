@@ -146,7 +146,7 @@ lval *lval_add(lval *v, lval *x);
 /**
  * Prints the contents of an lval to the screen.
  */
-void lval_print(const lval *v);
+void lval_print(const lval *v, unsigned options);
 
 /**
  * Perform a deep copy on an lval.

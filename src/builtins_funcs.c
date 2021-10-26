@@ -2,6 +2,7 @@
  * Built-in functions providing core functionality.
  */
 
+#include <stdarg.h>
 #include <math.h>
 #include "lilith_int.h"
 #include "builtin_symbols.h"
@@ -534,7 +535,7 @@ static lval *builtin_print(lenv *env, lval *args)
 
     for (pair *ptr = args->value.list.head; ptr; ptr = ptr->next)
     {
-        lval_print(ptr->data);
+        lval_print(ptr->data, 1);
         putchar(' ');
     }
 
