@@ -187,6 +187,11 @@ static void increment_head(tokeniser *tok)
 static void move_head_to_eol(tokeniser *tok)
 {
     const char *ptr = strchr(tok->head, '\n');
+    if (!ptr)
+    {
+        ptr = strchr(tok->head, '\0');
+    }
+
     tok->position += ptr - tok->head;
     tok->head = ptr;
 }

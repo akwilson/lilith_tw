@@ -148,13 +148,6 @@ lval *lilith_read_from_string(const char *input)
         }
     }
 
-    if (rv->value.list.count == 1)
-    {
-        lval *y = lval_pop(rv);
-        lval_del(rv);
-        rv = y;
-    }
-
 END:
     free_tokeniser(tok);
     return rv;

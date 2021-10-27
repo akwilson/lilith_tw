@@ -96,6 +96,7 @@ static lval *builtin_op(lenv *env, lval *a, const char* symbol, enum iops_enum i
 {
     LASSERT_ENV(a, env, symbol);
     LASSERT_NO_ERROR(a);
+    LASSERT(a, LVAL_EXPR_CNT(a) > 0, "function '%s' expects at least one argument", symbol);
 
     // Confirm that all arguments are numeric values
     for (pair *ptr = a->value.list.head; ptr; ptr = ptr->next)
