@@ -1,0 +1,32 @@
+;;; Sequences are lazily evaluated streams of something
+
+;; seq -- repeatedly read from a function until it returns nil
+;; the resulting "sequence" can be treated like a q-expression
+
+; some-numbers is a built-in to return numbers
+(length (seq {some-numbers}))
+
+(sum (seq {some-numbers}))
+
+; define a Lilith some-numbers equivalent. This is shitty
+; but gets the idea across.
+(def {numbers} {1 2 3 4})
+(def {ptr} -1)
+(defun {number-reader}
+  {if (= ptr (len numbers))
+    {nil}
+    {nth numbers (inc ptr)}
+  }
+)
+
+(sum (seq {number-reader}))
+
+(-> (seq {number-reader}
+    {map (\ {x} {* 10 x})}
+    {sum}
+)
+
+; Change types enum to be a bitmask
+; LVAL_SEQ : LVAL_QEXPR, LVAL_STRING, LVAL_SEQ_FUNC
+; head, tail, join all take LVAL_SEQ -- head needs to contain the value, not a q-expr with the value
+; dynamic dispatch in lval_pop and lval_take to call implementation for q-expr, string, repeated function call

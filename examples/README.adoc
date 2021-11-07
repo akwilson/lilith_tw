@@ -1,0 +1,6 @@
+= Lilith Code Examples
+
+These do not necessarily work...!
+
+I find it helps to write fantasy Lilith code then build out the interpreter so that the fantasy code actually works.
+This directory therefore contains a mix of features that I'm working on and code that actually runs.

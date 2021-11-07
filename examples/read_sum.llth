@@ -1,0 +1,52 @@
+;;; Read numbers from a file, line by line, and sum them
+
+;; Version 1 - read whole file as a string
+; easiest to implement; least inefficient
+; (let)
+; read file contents to big-ass string
+; split string, convert to q-expr
+; string to int conversion
+(defun {sum-vals fn}
+  {let {data (file->string fn)}
+    {-> (tokenise-string data "\n")
+        {map string->number}
+        {sum}
+    }
+  }
+)
+
+;; Version 2 - read row by row
+; easy to implement; more efficient; Lilith code is fugly
+; (let)
+; wrappers for fopen and fgets
+; string to int conversion
+(defun {sum-vals fn}
+  {let
+    {data (file-open fn)
+     adder (\ {tot}
+              {let {row (file-read-row data)}
+                {if (nil? row)
+                  {tot}
+                  {adder (+ tot (string->number row))}
+                }
+              }
+           )
+    }
+    {adder 0}
+  }
+) 
+
+;; Version 3 - read row by row - seq creates a sequence, an iteratable list-like structure
+; A lot of effort to implement; efficient; looks nice
+; (let)
+; wrappers for fopen and fgets
+; string to int conversion
+; sequences: what are they? how do they work?
+(defun {sum-vals fn}
+  {let {data (file-open fn)}
+    {-> (seq {file-read-row data})
+        {map string->number}
+        {sum}
+    }
+  }
+)
