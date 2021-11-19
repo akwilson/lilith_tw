@@ -2,6 +2,7 @@
  * Maintains the Lisp Environment -- the function lookup table.
  */
 
+#include <collections.h>
 #include "lilith_int.h"
 
 #ifdef __linux
@@ -82,6 +83,7 @@ static bool lenv_put_internal(lenv *e, lval *k, env_entry ee)
 
 lenv *lenv_new()
 {
+    void *ht = hash_table(32);
     lenv *rv = malloc(sizeof(lenv));
     rv->parent = 0;
     rv->count = 0;

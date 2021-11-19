@@ -1,3 +1,6 @@
 [submodule "lib/simplified-make"]
 	path = lib/simplified-make
 	url = https://github.com/akwilson/simplified-make.git
+[submodule "lib/collections"]
+	path = lib/collections
+	url = https://github.com/akwilson/collections.git
