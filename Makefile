@@ -1,4 +1,4 @@
-SUBDIRS = src
+SUBDIRS = lib/collections src
 
 SUBCLEAN = $(addsuffix .cln, $(SUBDIRS))
 
@@ -6,10 +6,10 @@ SUBCLEAN = $(addsuffix .cln, $(SUBDIRS))
 
 subdirs : $(SUBDIRS)
 
+src : lib/collections
+
 $(SUBDIRS) :
 	$(MAKE) -C $@ --no-print-directory
-
-test : src
 
 clean : $(SUBCLEAN)
 
@@ -19,5 +19,5 @@ $(SUBCLEAN) :
 install : src
 	$(MAKE) install -C src --no-print-directory
 
-tests : test
+tests : src
 	src/build/lilith test/test_builtins.llth test/test_stdlib.llth
