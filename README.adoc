@@ -1,22 +1,30 @@
-= Lilith Lisp
+= Lilith
 
 A Lisp interpreter.
 
 == Build Lilith
 Both Linux and Mac OS are supported.
 
-Lilith has a dependency on the `editline` library.
+The Lilith REPL has a dependency on the `editline` library.
 Many platforms (Mac OS) have this installed as standard but if not it will be available through your package manager.
-E.g. on Ubuntu
+E.g. on Ubuntu,
 
  $ sudo apt install libedit-dev
 
-Lilith's makefiles use my own make package, `simplified-make` which is also available on Github. From the root directory of the project run,
+There are a couple of additional dependencies on my own libraries which are also available on Github.
+`simplified-make` keeps Lilith's makefiles simple and `collections` provides a hash table implementation. Both are referenced here as submodules so clone Lilith with this command,
 
- $ git submodule init
- $ git submodule update
+ $ git clone --recurse-submodules https://github.com/akwilson/lilith.git
 
-From there just make the project.
+From there just build the project,
 
  $ make
 
+Or build and run the automated tests,
+
+ $ make tests
+
+and run the Lilith REPL with,
+
+ $ src/build/lilith
+ 
