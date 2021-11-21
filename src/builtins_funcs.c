@@ -661,7 +661,7 @@ void lenv_add_builtin(lenv *env, char *name, lbuiltin func)
     lval *k = lval_symbol(name);
     lval *v = lval_fun(func);
 
-    lenv_put_builtin(env, k, v);
+    lenv_put(env, k, v);
     lval_del(k);
     lval_del(v);
 }
