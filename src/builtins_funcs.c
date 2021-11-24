@@ -8,6 +8,7 @@
 #include "builtin_symbols.h"
 
 char *lookup_load_file(const char *filename);
+static lval *builtin_eval(lenv* env, lval *args);
 
 #define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
     LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
@@ -28,14 +29,14 @@ char *lookup_load_file(const char *filename);
  * @param adder pointer to a function to add to the environment
  * @returns     an empty s-expression on success, an error otherwise
  */
-static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lval*))
+static lval *builtin_assign(lenv *env, lval *val, size_t expected, bool (*adder)(lenv*, lval*, lval*))
 {
     LASSERT_ENV(val, env, BUILTIN_SYM_DEF);
     LASSERT_NO_ERROR(val);
     LASSERT_TYPE_ARG(val, LVAL_EXPR_FIRST(val), LVAL_QEXPRESSION, BUILTIN_SYM_DEF);
 
     // First argument is a symbol list
-    lval *syms = LVAL_EXPR_FIRST(val);
+    lval *syms = lval_pop(val);
     for (pair *ptr = syms->value.list.head; ptr; ptr = ptr->next)
     {
         LASSERT(val, ptr->data->type == LVAL_SYMBOL,
@@ -43,31 +44,43 @@ static lval *builtin_assign(lenv *env, lval *val, bool (*adder)(lenv*, lval*, lv
             BUILTIN_SYM_DEF, ltype_name(LVAL_SYMBOL), ltype_name(ptr->data->type));
     }
 
-    LASSERT(val, LVAL_EXPR_CNT(syms) == LVAL_EXPR_CNT(val) - 1,
+    LASSERT(val, LVAL_EXPR_CNT(syms) == expected,
         "function '%s' argument mismatch - %d symbols, %d values",
-        BUILTIN_SYM_DEF, LVAL_EXPR_CNT(syms), LVAL_EXPR_CNT(val) - 1);
-    
+        BUILTIN_SYM_DEF, LVAL_EXPR_CNT(syms), expected);
+
     // Assign symbols to values
     size_t i = 0;
     for (pair *ptr = syms->value.list.head; ptr; ptr = ptr->next)
     {
-        LASSERT(val, !adder(env, ptr->data, lval_expr_item(val, i + 1)),
+        LASSERT(val, !adder(env, ptr->data, lval_pop(val)),
             "function '%s' is a built-in", ptr->data->value.str_val);
         i++;
     }
 
-    lval_del(val);
-    return lval_sexpression();
+    return LVAL_EXPR_CNT(val) ? val : lval_sexpression();
 }
 
 static lval *builtin_def(lenv *env, lval *val)
 {
-    return builtin_assign(env, val, lenv_def);
+    lval *rv = builtin_assign(env, val, LVAL_EXPR_CNT(val) - 1, lenv_def);
+    lval_del(val);
+    return rv;
 }
 
-static lval *builtin_put(lenv *env, lval *val)
+static lval *builtin_let(lenv *env, lval *val)
 {
-    return builtin_assign(env, val, lenv_put);
+    lenv *nenv = lenv_new();
+    lenv_set_parent(nenv, env);
+
+    lval *rv = builtin_assign(nenv, val, LVAL_EXPR_CNT(val) - 2, lenv_put);
+    if (rv->type != LVAL_ERROR)
+    {
+        // val now contains the final q-expr
+        rv = builtin_eval(nenv, val);
+    }
+
+    lenv_del(nenv);
+    return rv;
 }
 
 /**
@@ -679,7 +692,7 @@ lval *call_builtin(lenv *env, char *symbol, lval *args)
 void lenv_add_builtins_funcs(lenv *e)
 {
     lenv_add_builtin(e, BUILTIN_SYM_DEF, builtin_def);
-    lenv_add_builtin(e, BUILTIN_SYM_PUT, builtin_put);
+    lenv_add_builtin(e, BUILTIN_SYM_LET, builtin_let);
     lenv_add_builtin(e, BUILTIN_SYM_LIST, builtin_list);
     lenv_add_builtin(e, BUILTIN_SYM_HEAD, builtin_head);
     lenv_add_builtin(e, BUILTIN_SYM_TAIL, builtin_tail);

@@ -16,7 +16,7 @@
 #define BUILTIN_SYM_LEN "len"
 #define BUILTIN_SYM_CONS "cons"
 #define BUILTIN_SYM_INIT "init"
-#define BUILTIN_SYM_PUT "put"
+#define BUILTIN_SYM_LET "let"
 #define BUILTIN_SYM_LAMBDA "\\"
 
 // Comparison / sequencing

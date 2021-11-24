@@ -6,11 +6,7 @@
 
 ; Function to define functions.
 ; (defun {function_name params...} {function_body})
-(def {defun}
-  (\ {args body}
-    {def (head args) (\ (tail args) body)}
-  )
-)
+(def {defun} (\ {args body} {def (head args) (\ (tail args) body)}))
 
 ;; Simple Predicates ----------------------------------------------------------
 
@@ -30,8 +26,7 @@
 (defun {pack f & xs} {f xs})
 
 ; Aliases for above
-(def {curry} unpack)
-(def {uncurry} pack)
+(def {curry uncurry} unpack pack)
 
 ;; Core features --------------------------------------------------------------
 
@@ -44,9 +39,6 @@
   }
 )
 
-; Defines a local variable
-(defun {let b} { ((\ {_} b) ()) })
-
 ;; List functions -------------------------------------------------------------
 
 ; Returns the first, second or third item in a list
@@ -57,17 +49,14 @@
 ; Creates a q-expression of values between from (inclusive) and to (exclusive). 
 (defun {range from to}
   {let
-    {do
-      (put {range-build}
-        (\ {x y sofar}
-          {if (= x y)
-            {sofar}
-            {range-build x (- y 1) (cons (- y 1) sofar)}
-          }
-        )
-      )
-      (range-build from to {})
-    }
+    {range-build}
+    (\ {x y sofar}
+        {if (= x y)
+          {sofar}
+          {range-build x (- y 1) (cons (- y 1) sofar)}
+        }
+    )
+    {range-build from to {}}
   }
 )
 
@@ -201,17 +190,14 @@
 
 ; Test a value and return a message if it does not match.
 (defun {assert name f expected msg}
-  {let
-    {do
-      (put {res} (f))
-      (if (= res expected)
-        {#t}
-        {do
-          (print "\t***" name msg "| Expected" expected "| Actual" res)
-          (#f)
-        }
-      )
-    }
+  {let {res} (f)
+       {if (= res expected)
+           {#t}
+           {do
+             (print "\t***" name msg "| Expected" expected "| Actual" res)
+             (#f)
+           }
+       }
   }
 )
 
@@ -230,22 +216,21 @@
 ; Executes a series of tests and prints out a
 ; summary of those succeeding and failing.
 (defun {deftest x asserts}
-  {let
-    {do
-      (put {runner}
-        (\ {oks l}
+  {let {runner}
+       (\ {oks l}
           {if (nil? l)
-            {oks}
-            {if (fst l)
-              {runner (+ 1 oks) (tail l)}
-              {runner oks (tail l)}
-            }
+              {oks}
+              {if (fst l)
+                  {runner (+ 1 oks) (tail l)}
+                  {runner oks (tail l)}
+              }
           }
-        )
-      )
-      (print x)
-      (put {test_ok} (runner 0 asserts))
-      (print "\tSucceeded:" test_ok "\tFailed:" (- (len asserts) test_ok))
-    }
+       )
+       {do
+         (print x)
+         (let {test_ok} (runner 0 asserts)
+              {print "\tSucceeded:" test_ok "\tFailed:" (- (len asserts) test_ok)}
+         )
+       }
   }
 )

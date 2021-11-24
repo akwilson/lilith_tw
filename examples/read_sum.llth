@@ -7,7 +7,8 @@
 ; split string, convert to q-expr
 ; string to int conversion
 (defun {sum-vals fn}
-  {let {data (file->string fn)}
+  {let
+    {data} (file->string fn)
     {-> (tokenise-string data "\n")
         {map string->number}
         {sum}
@@ -22,16 +23,18 @@
 ; string to int conversion
 (defun {sum-vals fn}
   {let
-    {data (file-open fn)
-     adder (\ {tot}
-              {let {row (file-read-row data)}
-                {if (nil? row)
-                  {tot}
-                  {adder (+ tot (string->number row))}
-                }
-              }
-           )
-    }
+    {data adder}
+    (file-open fn)
+    (\ {tot}
+       {let
+         {row}
+         (file-read-row data)
+         {if (nil? row)
+           {tot}
+           {adder (+ tot (string->number row))}
+         }
+       }
+    )
     {adder 0}
   }
 ) 
@@ -43,7 +46,8 @@
 ; string to int conversion
 ; sequences: what are they? how do they work?
 (defun {sum-vals fn}
-  {let {data (file-open fn)}
+  {let
+    {data} (file-open fn)
     {-> (seq {file-read-row data})
         {map string->number}
         {sum}
