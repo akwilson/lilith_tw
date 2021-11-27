@@ -47,7 +47,16 @@ void lenv_set_parent(lenv *env, lenv *parent)
 
 void lenv_del(lenv *e)
 {
-    clxns_free(e->table, 1);
+    void *iter = clxns_iter_new(e->table);
+    while (clxns_iter_move_next(iter))
+    {
+        kvp *val = clxns_iter_get_next(iter);
+        free(val->key);
+        lval_del(val->value);
+    }
+
+    clxns_iter_free(iter);
+    clxns_free(e->table, 0);
     free(e);
 }
 

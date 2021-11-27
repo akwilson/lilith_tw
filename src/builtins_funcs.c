@@ -52,11 +52,14 @@ static lval *builtin_assign(lenv *env, lval *val, size_t expected, bool (*adder)
     size_t i = 0;
     for (pair *ptr = syms->value.list.head; ptr; ptr = ptr->next)
     {
-        LASSERT(val, !adder(env, ptr->data, lval_pop(val)),
+        lval *to_add = lval_pop(val);
+        LASSERT(val, !adder(env, ptr->data, to_add),
             "function '%s' is a built-in", ptr->data->value.str_val);
+        lval_del(to_add);
         i++;
     }
 
+    lval_del(syms);
     return LVAL_EXPR_CNT(val) ? val : lval_sexpression();
 }
 
