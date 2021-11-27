@@ -25,17 +25,13 @@
   {let
     {data adder}
     (file-open fn)
-    (\ {tot}
-       {let
-         {row}
-         (file-read-row data)
-         {if (nil? row)
-           {tot}
-           {adder (+ tot (string->number row))}
-         }
-       }
+    (\ {tot row}
+      {if (nil? row)
+        {tot}
+        {adder (+ tot (string->number row)) (file-read-row data)}
+      }
     )
-    {adder 0}
+    {adder 0 (file-read-row data)}
   }
 ) 
 
