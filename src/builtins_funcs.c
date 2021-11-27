@@ -54,7 +54,7 @@ static lval *builtin_assign(lenv *env, lval *val, size_t expected, bool (*adder)
     {
         lval *to_add = lval_pop(val);
         LASSERT(val, !adder(env, ptr->data, to_add),
-            "function '%s' is a built-in", ptr->data->value.str_val);
+            "symbol '%s' is a built-in", ptr->data->value.str_val);
         lval_del(to_add);
         i++;
     }
@@ -66,7 +66,11 @@ static lval *builtin_assign(lenv *env, lval *val, size_t expected, bool (*adder)
 static lval *builtin_def(lenv *env, lval *val)
 {
     lval *rv = builtin_assign(env, val, LVAL_EXPR_CNT(val) - 1, lenv_def);
-    lval_del(val);
+    if (rv->type != LVAL_ERROR)
+    {
+        lval_del(val);
+    }
+
     return rv;
 }
 
