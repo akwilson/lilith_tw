@@ -15,7 +15,6 @@ struct lenv
 {
     lenv *parent;
     void *table;
-    bool read_only;
 };
 
 /**
@@ -79,7 +78,7 @@ lval *lenv_get(lenv *e, lval *k)
 bool lenv_put(lenv *e, lval *k, lval *v)
 {
     lval *ptr;
-    if (e->read_only && hash_table_get(e->table, k->value.str_val, (void**)&ptr) == C_OK)
+    if (hash_table_get(e->table, k->value.str_val, (void**)&ptr) == C_OK && ptr->type == LVAL_BUILTIN_FUN)
     {
         return true;
     }
@@ -103,7 +102,6 @@ lenv *lenv_copy(lenv *e)
     lenv *rv = malloc(sizeof(lenv));
     rv->parent = e->parent;
     rv->table = hash_table(clxns_count(e->table));
-    rv->read_only = e->read_only;
 
     void *iter = clxns_iter_new(e->table);
     while (clxns_iter_move_next(iter))
@@ -136,13 +134,10 @@ lval *lenv_to_lval(lenv *env)
 lenv *lilith_init()
 {
     lenv *env = lenv_new();
-    env->read_only = true;
     lenv_add_builtins_sums(env);
     lenv_add_builtins_funcs(env);
 
-    lenv *nenv = lenv_new();
-    nenv->parent = env;
-    lval *x = load_std_lib(nenv);
+    lval *x = load_std_lib(env);
     if (x->type == LVAL_ERROR)
     {
         lilith_println(x);
@@ -150,15 +145,10 @@ lenv *lilith_init()
     }
 
     lval_del(x);
-    return nenv;
+    return env;
 }
 
 void lilith_cleanup(lenv *env)
 {
-    if (env->parent)
-    {
-        lenv_del(env->parent);
-    }
-    
     lenv_del(env);
 }
