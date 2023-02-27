@@ -59,6 +59,15 @@
 #define LASSERT_ENV(arg, arg_env, arg_symbol) \
     LASSERT(arg, arg_env != 0, "environment not set for '%s'", arg_symbol)
 
+#define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
+    LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
+        "function '%s' expects %d argument, received %d", \
+        arg_symbol, expected, LVAL_EXPR_CNT(arg))
+
+#define LASSERT_TYPE_ARG(arg, val, expected, arg_symbol)                                          \
+    LASSERT(arg, val->type == expected, "function '%s' type mismatch - expected %s, received %s", \
+        arg_symbol, ltype_name(expected), ltype_name(val->type))
+
 /*
  * If any of the list elements are an error, return the
  * error and delete all of the other arguments.

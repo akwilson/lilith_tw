@@ -201,12 +201,17 @@ bool lenv_def(lenv *e, lval *k, lval *v);
 /**
  * Add built-in arithmetic functions to the environment.
  */
-void lenv_add_builtins_sums(lenv *e);
+void lenv_add_builtin_sums(lenv *e);
 
 /**
- * Add built-in functions to the environment.
+ * Add built-in core functions to the environment.
  */
-void lenv_add_builtins_funcs(lenv *e);
+void lenv_add_builtin_core(lenv *e);
+
+/**
+ * Add built-in operating system functions to the environment.
+ */
+void lenv_add_builtin_os(lenv *e);
 
 /**
  * Performs a deep copy of the environment.

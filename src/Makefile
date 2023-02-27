@@ -1,5 +1,5 @@
 BIN1 = lilith
-BIN1_SRCS = lval.c builtins_funcs.c builtins_sums.c eval.c lenv.c repl.c utils.c tokeniser.c reader.c
+BIN1_SRCS = lval.c builtin_core.c builtin_sums.c builtin_os.c eval.c lenv.c repl.c utils.c tokeniser.c reader.c
 BIN1_BLOBS = stdlib.llth
 
 INCLUDE_PATH = -I../lib/collections/src

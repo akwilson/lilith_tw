@@ -134,8 +134,9 @@ lval *lenv_to_lval(lenv *env)
 lenv *lilith_init()
 {
     lenv *env = lenv_new();
-    lenv_add_builtins_sums(env);
-    lenv_add_builtins_funcs(env);
+    lenv_add_builtin_sums(env);
+    lenv_add_builtin_core(env);
+    lenv_add_builtin_os(env);
 
     lval *x = load_std_lib(env);
     if (x->type == LVAL_ERROR)

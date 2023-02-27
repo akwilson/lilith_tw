@@ -138,7 +138,7 @@ static lval *builtin_op(lenv *env, lval *a, const char* symbol, enum iops_enum i
     IOPS
 #undef $
 
-void lenv_add_builtins_sums(lenv *e)
+void lenv_add_builtin_sums(lenv *e)
 {
 #define $(X, LOP, DOP, SYM) lenv_add_builtin(e, SYM, builtin_##X);
     IOPS

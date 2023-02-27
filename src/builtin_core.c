@@ -10,15 +10,6 @@
 char *lookup_load_file(const char *filename);
 static lval *builtin_eval(lenv* env, lval *args);
 
-#define LASSERT_NUM_ARGS(arg, expected, arg_symbol)       \
-    LASSERT(arg, LVAL_EXPR_CNT(arg) == expected,          \
-        "function '%s' expects %d argument, received %d", \
-        arg_symbol, expected, LVAL_EXPR_CNT(arg))
-
-#define LASSERT_TYPE_ARG(arg, val, expected, arg_symbol)                                          \
-    LASSERT(arg, val->type == expected, "function '%s' type mismatch - expected %s, received %s", \
-        arg_symbol, ltype_name(expected), ltype_name(val->type))
-
 /**
  * Built-in function for defining new symbols. First argument in val's list
  * is a q-expression with one or more symbols. Additional arguments are values
@@ -696,7 +687,7 @@ lval *call_builtin(lenv *env, char *symbol, lval *args)
     return rv;
 }
 
-void lenv_add_builtins_funcs(lenv *e)
+void lenv_add_builtin_core(lenv *e)
 {
     lenv_add_builtin(e, BUILTIN_SYM_DEF, builtin_def);
     lenv_add_builtin(e, BUILTIN_SYM_LET, builtin_let);
